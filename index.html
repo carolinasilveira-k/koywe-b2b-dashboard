@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Koywe — Dashboard B2B | Marzo 2026</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Raleway:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root {
+  --deep:    #022416;
+  --dark:    #19502C;
+  --mid:     #1B6B3A;
+  --lima:    #C8FF1D;
+  --lima2:   #D4FF4D;
+  --lima3:   #efffbb;
+  --lav:     #ccb6ea;
+  --coal:    #4d4d4d;
+  --white:   #FFFFFF;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:'Raleway',sans-serif; background:var(--dark); color:var(--lima3); min-height:100vh; }
+h1,h2,h3,h4 { font-family:'DM Sans',sans-serif; color:var(--white); }
+
+/* TOPBAR */
+.topbar { background:var(--deep); padding:0 40px; display:flex; align-items:center; justify-content:space-between; height:56px; border-bottom:1px solid var(--coal); }
+.topbar .meta { font-size:12px; color:var(--lima3); opacity:0.7; font-family:'Raleway',sans-serif; }
+
+/* TABS */
+.tabnav { background:var(--deep); padding:0 40px; display:flex; border-bottom:1px solid var(--coal); }
+.tab { padding:14px 20px; font-size:13px; font-weight:600; font-family:'DM Sans',sans-serif; cursor:pointer; color:var(--lima3); opacity:0.6; border-bottom:3px solid transparent; margin-bottom:-1px; transition:all 0.15s; display:flex; align-items:center; gap:7px; }
+.tab:hover { opacity:0.9; }
+.tab.active { color:var(--white); opacity:1; border-bottom-color:var(--lima); }
+.tab-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+
+/* PANELS */
+.panel { display:none; }
+.panel.active { display:block; }
+.container { max-width:1280px; margin:0 auto; padding:28px 40px; }
+.note-bar { padding:10px 40px; font-size:12px; font-family:'Raleway',sans-serif; color:var(--lima3); border-left:3px solid var(--lima); background:rgba(200,255,29,0.06); }
+
+/* KPIS */
+.kpis { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:24px; }
+.kpi { background:var(--mid); border-radius:12px; padding:18px 20px; border:1px solid rgba(255,255,255,0.06); }
+.kpi .label { font-size:11px; font-weight:600; font-family:'DM Sans',sans-serif; text-transform:uppercase; letter-spacing:0.7px; color:var(--lima3); opacity:0.7; margin-bottom:8px; }
+.kpi .value { font-size:28px; font-weight:700; font-family:'DM Sans',sans-serif; color:var(--lima); line-height:1; }
+.kpi .sub { font-size:11.5px; color:var(--lima3); opacity:0.6; margin-top:5px; }
+
+/* CHARTS */
+.charts-row { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:24px; }
+.chart-card { background:var(--mid); border-radius:12px; padding:20px; border:1px solid rgba(255,255,255,0.06); }
+.chart-card h3 { font-size:12.5px; font-weight:600; color:var(--lima3); margin-bottom:14px; font-family:'DM Sans',sans-serif; opacity:0.85; }
+.chart-wrap { position:relative; height:230px; }
+
+/* TABLES */
+.table-card { background:var(--mid); border-radius:12px; padding:20px; border:1px solid rgba(255,255,255,0.06); margin-bottom:16px; }
+.table-card h3 { font-size:12.5px; font-weight:600; color:var(--lima3); margin-bottom:14px; font-family:'DM Sans',sans-serif; opacity:0.85; }
+table { width:100%; border-collapse:collapse; font-size:12.5px; }
+thead th { text-align:left; padding:8px 12px; background:rgba(0,0,0,0.2); font-size:10.5px; text-transform:uppercase; letter-spacing:0.5px; color:var(--lima3); font-weight:700; font-family:'DM Sans',sans-serif; opacity:0.6; border-bottom:1px solid var(--coal); }
+tbody tr { border-bottom:1px solid rgba(255,255,255,0.04); }
+tbody tr:last-child { border-bottom:none; }
+tbody tr:hover { background:rgba(255,255,255,0.03); }
+tbody td { padding:9px 12px; color:var(--lima3); }
+.rank { font-weight:700; color:var(--coal); font-size:11px; width:28px; }
+.cname { font-weight:600; color:var(--white); font-family:'DM Sans',sans-serif; }
+.cname.mono { font-family:monospace; font-size:12px; color:var(--lima3); }
+.num { text-align:right; font-variant-numeric:tabular-nums; }
+.num.big { font-weight:700; color:var(--white); font-family:'DM Sans',sans-serif; }
+
+/* BADGES */
+.change { display:inline-flex; align-items:center; gap:3px; padding:2px 8px; border-radius:10px; font-size:11px; font-weight:700; font-family:'DM Sans',sans-serif; }
+.change.up   { background:rgba(200,255,29,0.15); color:var(--lima); }
+.change.down { background:rgba(239,68,68,0.15); color:#f87171; }
+.change.new  { background:rgba(204,182,234,0.15); color:var(--lav); }
+.change.flat { background:rgba(255,255,255,0.07); color:var(--lima3); }
+.seg-badge { display:inline-flex; align-items:center; gap:4px; padding:2px 9px; border-radius:9px; font-size:10.5px; font-weight:700; font-family:'DM Sans',sans-serif; }
+.active-badge { display:inline-flex; align-items:center; gap:5px; font-size:11px; font-weight:600; font-family:'DM Sans',sans-serif; }
+.dot { width:7px; height:7px; border-radius:50%; display:inline-block; }
+.dot.g { background:#4ade80; }
+.dot.r { background:#f87171; }
+
+/* CONC BAR */
+.conc-bar-wrap { margin:8px 0 16px; }
+.conc-bar { height:26px; border-radius:6px; display:flex; overflow:hidden; }
+.conc-seg { display:flex; align-items:center; justify-content:center; font-size:9.5px; font-weight:700; font-family:'DM Sans',sans-serif; color:var(--deep); white-space:nowrap; overflow:hidden; padding:0 4px; }
+.conc-legend { display:flex; flex-wrap:wrap; gap:10px; margin-top:10px; }
+.conc-legend-item { display:flex; align-items:center; gap:5px; font-size:11px; color:var(--lima3); }
+.conc-dot { width:10px; height:10px; border-radius:3px; flex-shrink:0; }
+
+/* ALERTS */
+.alert-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:24px; }
+.alert-card { background:var(--mid); border-radius:12px; padding:20px; border:1px solid rgba(255,255,255,0.06); }
+.alert-header { display:flex; align-items:center; gap:8px; font-size:12.5px; font-weight:700; font-family:'DM Sans',sans-serif; color:var(--white); margin-bottom:12px; padding-bottom:10px; border-bottom:1px solid rgba(255,255,255,0.06); }
+.alert-count { margin-left:auto; border-radius:10px; padding:2px 9px; font-size:11.5px; font-weight:700; font-family:'DM Sans',sans-serif; }
+.alert-count.red { background:rgba(239,68,68,0.2); color:#f87171; }
+.alert-count.am  { background:rgba(251,191,36,0.2); color:#fbbf24; }
+.alert-row { display:flex; justify-content:space-between; align-items:center; padding:7px 0; border-bottom:1px solid rgba(255,255,255,0.04); font-size:12px; }
+.alert-row:last-child { border-bottom:none; }
+.alert-client { font-weight:600; color:var(--white); font-family:'DM Sans',sans-serif; }
+.alert-meta { font-size:11px; color:var(--lima3); opacity:0.6; margin-top:1px; }
+.alert-vol { font-size:11.5px; font-weight:700; flex-shrink:0; margin-left:8px; color:var(--lima3); }
+
+/* OVERVIEW CARDS */
+.seg-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:24px; }
+.seg-card { background:var(--mid); border-radius:12px; padding:20px; border:1px solid rgba(255,255,255,0.06); border-top:3px solid; cursor:pointer; transition:transform 0.15s, box-shadow 0.15s; }
+.seg-card:hover { transform:translateY(-2px); box-shadow:0 8px 24px rgba(0,0,0,0.3); }
+.seg-card h2 { font-size:15px; font-weight:700; color:var(--white); margin-bottom:4px; }
+.seg-card .seg-vol { font-size:26px; font-weight:700; font-family:'DM Sans',sans-serif; margin:8px 0 3px; }
+.seg-card .seg-sub { font-size:11.5px; color:var(--lima3); opacity:0.6; }
+.seg-card .seg-bar-bg { height:4px; border-radius:2px; background:rgba(255,255,255,0.1); margin-top:14px; }
+.seg-card .seg-bar-fill { height:4px; border-radius:2px; }
+
+/* PACE BAR */
+.pace-row { display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid rgba(255,255,255,0.06); font-size:12.5px; }
+.pace-row:last-child { border-bottom:none; }
+.pace-label { color:var(--lima3); opacity:0.7; }
+.pace-value { font-weight:600; color:var(--white); font-family:'DM Sans',sans-serif; }
+.pace-bar-bg { background:rgba(255,255,255,0.1); border-radius:4px; height:7px; margin-top:10px; }
+.pace-bar-fill { height:7px; border-radius:4px; background:var(--lima); }
+
+/* FUNNEL */
+.funnel-wrap { display:flex; flex-direction:column; gap:8px; margin-bottom:24px; }
+.funnel-stage { display:flex; align-items:center; gap:16px; }
+.funnel-bar-area { flex:1; position:relative; }
+.funnel-bar-bg { height:44px; border-radius:8px; background:rgba(255,255,255,0.05); overflow:hidden; position:relative; }
+.funnel-bar-fill { height:44px; border-radius:8px; transition:width 0.4s; display:flex; align-items:center; padding:0 16px; }
+.funnel-label { font-family:'DM Sans',sans-serif; font-size:13px; font-weight:600; min-width:140px; color:var(--lima3); }
+.funnel-count { font-family:'DM Sans',sans-serif; font-size:22px; font-weight:700; min-width:60px; text-align:right; color:var(--white); }
+.funnel-pct { font-size:11px; font-weight:600; font-family:'DM Sans',sans-serif; color:var(--deep); margin-left:auto; padding-right:4px; opacity:0.85; }
+.funnel-conv { font-size:11px; color:var(--lima3); opacity:0.5; min-width:60px; text-align:right; }
+.section-title { font-size:14px; font-weight:700; color:var(--white); font-family:'DM Sans',sans-serif; margin-bottom:14px; }
+
+/* INFO CARD */
+.info-card { background:rgba(200,255,29,0.08); border:1px solid rgba(200,255,29,0.2); border-radius:10px; padding:14px 16px; margin-bottom:16px; font-size:12.5px; color:var(--lima3); display:flex; gap:12px; align-items:flex-start; }
+.info-card svg { flex-shrink:0; margin-top:1px; }
+
+/* COUNTRY BREAKDOWN */
+.country-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:10px; margin-bottom:14px; }
+.country-card { background:rgba(0,0,0,0.2); border-radius:10px; padding:14px 16px; border:1px solid rgba(255,255,255,0.06); }
+.country-card .cflag { font-size:22px; line-height:1; margin-bottom:6px; }
+.country-card .cname2 { font-size:10.5px; font-weight:700; font-family:'DM Sans',sans-serif; text-transform:uppercase; letter-spacing:0.5px; color:var(--lima3); opacity:0.65; margin-bottom:4px; }
+.country-card .cvol { font-size:18px; font-weight:700; font-family:'DM Sans',sans-serif; color:var(--white); line-height:1; }
+.country-card .cpct { font-size:11px; color:var(--lima3); opacity:0.5; margin-top:3px; }
+.cbar-wrap { height:5px; background:rgba(255,255,255,0.08); border-radius:3px; margin-top:8px; }
+.cbar-fill { height:5px; border-radius:3px; }
+
+
+/* COUNTRY BAR ROWS */
+.ctry-bar-row { display:flex; align-items:center; gap:12px; padding:8px 0; border-bottom:1px solid rgba(255,255,255,0.04); }
+.ctry-bar-row:last-child { border-bottom:none; }
+.ctry-code { font-size:13px; font-weight:700; font-family:'DM Sans',sans-serif; color:var(--white); min-width:28px; }
+.ctry-name { font-size:12px; color:var(--lima3); opacity:0.7; min-width:84px; font-family:'Raleway',sans-serif; }
+.ctry-track { flex:1; position:relative; height:10px; background:rgba(255,255,255,0.06); border-radius:5px; }
+.ctry-proj-bar { position:absolute; top:0; left:0; height:100%; border-radius:5px; background:rgba(255,255,255,0.11); }
+.ctry-actual-bar { position:absolute; top:0; left:0; height:100%; border-radius:5px; }
+.ctry-amounts { font-size:11.5px; font-weight:600; font-family:'DM Sans',sans-serif; color:var(--white); min-width:150px; text-align:right; white-space:nowrap; }
+.ctry-proj-amt { font-weight:400; color:var(--lima3); opacity:0.5; }
+.ctry-total-row { display:flex; align-items:center; gap:12px; padding:10px 0 0; border-top:1px solid rgba(255,255,255,0.1); margin-top:4px; }
+.ctry-pct-badge { font-size:11px; font-weight:700; font-family:'DM Sans',sans-serif; padding:2px 9px; border-radius:8px; margin-left:6px; }
+.footer { text-align:center; padding:20px; font-size:11px; color:var(--lima3); opacity:0.35; border-top:1px solid var(--coal); margin-top:8px; font-family:'Raleway',sans-serif; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTMwIiBoZWlnaHQ9IjQwIiB2aWV3Qm94PSIwIDAgMTMwIDQwIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8cGF0aCBkPSJNMTE4LjE0OCA3Ljc2MTcyQzEyNS4yNDcgNy43NjE4MyAxMjkuOTc3IDEzLjI0MDYgMTI5Ljk3NyAyMC4wMTQ2TDEzMCAyMEMxMjkuOTk1IDIwLjUyMjEgMTI5Ljk2MiAyMS4wNDQzIDEyOS45MDUgMjEuNTY2NEgxMTEuMDc4QzExMS42NyAyNS4zMzA5IDExNC4zODEgMjcuNjQyNiAxMTguMTc3IDI3LjY0MjZDMTE5LjQyOCAyNy42ODUzIDEyMC42NjQgMjcuMzk1OSAxMjEuNzY0IDI2Ljc5NzlDMTIyLjg2MyAyNi4xOTk3IDEyMy43ODMgMjUuMzE3IDEyNC40MjMgMjQuMjQ0MUgxMjkuNDE3QzEyOC42MDIgMjYuNTc0OCAxMjcuMDgxIDI4LjU5MjIgMTI1LjA1OCAzMC4wMDY4QzEyMy4wMzkgMzEuNDIxNSAxMjAuNjIxIDMyLjE2MiAxMTguMTU3IDMyLjEyNEMxMTIuMzA1IDMyLjEyMzggMTA3LjY4NSAyOC4yMTY4IDEwNi41MjggMjIuNjg2NUw5OS41MDEgMjYuMjgwM0w5Ny43MzgzIDMxLjU0OThIOTMuODcxMUw4Ny44OTA2IDE3LjQwODJMODEuOTQzNCAzMS41NDk4SDc4LjA3NzFMNzAuMzk1NSA4LjU5NzY2TDU5Ljg4NDggMzEuOTYyOUM1Ny4yNjg5IDM3LjgyMDggNTQuOTYwOCAzOS44NjYyIDUwLjIzMTQgMzkuODY2Mkg0Ny44NzZWMzUuNTcwM0g0OS44NjYyQzUyLjkzMjIgMzUuNTcwMyA1My44NzU4IDM0LjY2ODIgNTUuNTcyMyAzMC45NTEyTDU2LjEwMjUgMjkuODgzOEw1Mi41MjU0IDIyLjI1NDlMNDUuMjM2MyAxOC40MTAyQzQ1LjI5MzIgMTguOTA4NSA0NS4zMjcxIDE5LjQxNjQgNDUuMzI3MSAxOS45Mzg1QzQ1LjMyNzEgMjYuOTMwOSA0MC4wMTg4IDMyLjExOTEgMzIuOTI0OCAzMi4xMTkxQzI1LjgzMTEgMzIuMTE4OSAyMC41MjM1IDI2LjkyMTIgMjAuNTIzNCAxOS45Mzg1QzIwLjUyMzQgMTIuOTU1NiAyNS44NDA1IDcuNzYxOTUgMzIuOTI0OCA3Ljc2MTcyQzM3LjE4OTcgNy43NjE3MiA0MC44MTAzIDkuNjM3MTkgNDMuMDE4NiAxMi42NTYyTDQ5LjY3MTkgMTYuMTY4OUw0NiA4LjM0MDgySDUxLjE4MzZMNTguNTU3NiAyNC41MzgxTDY1LjQ3MTcgOC4zNDA4Mkw3MC41MjM0IDguMzEyNUw3MC41MTM3IDguMzI3MTVINzUuMjE5N0w4MC40NTYxIDIzLjk3ODVMODcuMTEzMyA4LjU3ODEySDg4LjY0OTRMOTUuMzk3NSAyNC4wOTE4TDEwMC43MTQgOC4zMjcxNUgxMDUuNDg2TDEwMS4zMiAyMC43ODgxTDEwNi4zNDQgMTguMjE5N0MxMDcuMTE2IDEyLjE1MyAxMTEuOTMxIDcuNzYxNzIgMTE4LjE0OCA3Ljc2MTcyWk00Ljc2NzU4IDBWMTcuMzEzNUg3LjY5MTQxTDEzLjk1MTIgOC4zMzIwM0gxOS42MDQ1TDExLjc0NzEgMTkuNDc3NUwyMC40Mzg1IDMxLjU1NDdIMTQuNjA5NEw3LjY1ODIgMjEuNjQ3NUg0Ljc2NzU4VjMxLjU1NDdIMFYwSDQuNzY3NThaTTMyLjkyOTcgMTIuMzE5M0MyOC41MzIyIDEyLjMxOTUgMjUuMzgwOSAxNS41MTQzIDI1LjM4MDkgMTkuOTM4NUMyNS4zODA5IDI0LjM2MjYgMjguNTQxOCAyNy41NjIzIDMyLjkyOTcgMjcuNTYyNUMzNy4zMTc4IDI3LjU2MjUgNDAuNDc4NCAyNC4zODY0IDQwLjQ3ODUgMTkuOTM4NUM0MC40Nzg1IDE1LjQ5MDQgMzcuMzI3MyAxMi4zMTkzIDMyLjkyOTcgMTIuMzE5M1pNMTE4LjE4MiAxMi4wNzIzQzExNC41OTQgMTIuMDcyMyAxMTEuOTgzIDE0LjI0MjEgMTExLjIwMSAxNy42ODg1SDEyNS4yMjhDMTI0LjM3IDE0LjE1NjcgMTIxLjc2OSAxMi4wNzI0IDExOC4xODIgMTIuMDcyM1oiIGZpbGw9IiNGRkZGRkYiLz4KPC9zdmc+Cg==" alt="Koywe" height="28" style="display:block;">
+  <div class="meta">Dashboard B2B · Marzo 2026 · Actualizado 18 Mar 2026</div>
+</div>
+
+<div class="tabnav">
+  <div class="tab active" onclick="showTab('overview')">
+    <span class="tab-dot" style="background:#C8FF1D"></span>Resumen
+  </div>
+  <div class="tab" onclick="showTab('rampa')">
+    <span class="tab-dot" style="background:#38bdf8"></span>Rampa
+  </div>
+  <div class="tab" onclick="showTab('otc')">
+    <span class="tab-dot" style="background:#a78bfa"></span>OTC
+  </div>
+  <div class="tab" onclick="showTab('k3')">
+    <span class="tab-dot" style="background:#4ade80"></span>K3
+  </div>
+</div>
+
+<!-- ===== OVERVIEW ===== -->
+<div id="panel-overview" class="panel active">
+<div class="note-bar">Vista consolidada · Rampa = SUM(currencyAmount/lastPriceUsd) · K3 = SUM(amountIn) × tasa por moneda · Pipeline = datos en tiempo real de HubSpot</div>
+<div class="container">
+  <div class="seg-grid">
+    <div class="seg-card" onclick="showTab('rampa')" style="border-top-color:#38bdf8">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <h2>Rampa</h2>
+        <span class="seg-badge" style="background:rgba(56,189,248,0.15);color:#38bdf8">22 clientes</span>
+      </div>
+      <div class="seg-vol" style="color:#38bdf8">$15.4M</div>
+      <div class="seg-sub">Volumen MTD USD · 24 MAU · 2 nuevos</div>
+      <div style="display:flex;gap:14px;margin-top:10px;font-size:11.5px">
+        <span style="color:#f87171;font-weight:600">Hapi -48.5%</span>
+        <span style="color:var(--lima);font-weight:600">Merit +94.9%</span>
+      </div>
+      <div class="seg-bar-bg"><div class="seg-bar-fill" style="width:23.6%;background:#38bdf8"></div></div>
+    </div>
+    <div class="seg-card" onclick="showTab('otc')" style="border-top-color:#a78bfa">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <h2>OTC Koywe</h2>
+        <span class="seg-badge" style="background:rgba(167,139,250,0.15);color:#a78bfa">89 clientes</span>
+      </div>
+      <div class="seg-vol" style="color:#a78bfa">$47.6M</div>
+      <div class="seg-sub">Volumen MTD USD · Proyección $82.0M</div>
+      <div style="display:flex;gap:14px;margin-top:10px;font-size:11.5px">
+        <span style="color:#f87171;font-weight:600">-32.8% vs Feb</span>
+        <span style="color:var(--lima3);font-weight:500">$2.64M/día</span>
+      </div>
+      <div class="seg-bar-bg"><div class="seg-bar-fill" style="width:74.2%;background:#a78bfa"></div></div>
+    </div>
+    <div class="seg-card" onclick="showTab('k3')" style="border-top-color:#4ade80">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <h2>K3 Cloud</h2>
+        <span class="seg-badge" style="background:rgba(74,222,128,0.15);color:#4ade80">22 merchants</span>
+      </div>
+      <div class="seg-vol" style="color:#4ade80">$1.4M</div>
+      <div class="seg-sub">Volumen MTD USD · 6 nuevos este mes</div>
+      <div style="display:flex;gap:14px;margin-top:10px;font-size:11.5px">
+        <span style="color:var(--lima);font-weight:600">Top 3 conc. 60.8%</span>
+      </div>
+      <div class="seg-bar-bg"><div class="seg-bar-fill" style="width:2.2%;background:#4ade80"></div></div>
+    </div>
+  </div>
+
+  <div class="charts-row">
+    <div class="chart-card">
+      <h3>Volumen por Segmento — Marzo MTD</h3>
+      <div class="chart-wrap"><canvas id="segChart"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <h3>Marzo vs Febrero por Segmento</h3>
+      <div class="chart-wrap"><canvas id="mvfChart"></canvas></div>
+    </div>
+  </div>
+
+  <!-- METAS VS REAL SECTION -->
+  <div style="margin-bottom:24px">
+    <div class="section-title" style="margin-bottom:4px;display:flex;align-items:center;gap:8px">
+      <span class="tab-dot" style="background:var(--lima);width:10px;height:10px"></span>
+      Metas vs Real — Marzo 2026
+    </div>
+    <div style="font-size:11.5px;color:var(--lima3);opacity:0.55;margin-bottom:14px;font-family:'Raleway',sans-serif">Pace: 18/31 días (58.1% del mes). Proyección = ritmo actual × días restantes. Meta = objetivo mensual completo.</div>
+
+    <!-- TOTAL CARD -->
+    <div class="chart-card" style="margin-bottom:14px;border-top:2px solid var(--lima);background:rgba(200,255,29,0.05)">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px">
+        <div>
+          <div style="font-size:11px;font-weight:700;font-family:'DM Sans',sans-serif;text-transform:uppercase;letter-spacing:0.7px;color:var(--lima3);opacity:0.6;margin-bottom:4px">Volumen Total — Todos los segmentos</div>
+          <div style="display:flex;align-items:baseline;gap:24px;flex-wrap:wrap">
+            <div>
+              <div style="font-size:10px;color:var(--lima3);opacity:0.5;font-family:'DM Sans',sans-serif;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:2px">Meta Marzo</div>
+              <div style="font-size:26px;font-weight:700;color:var(--lima3);font-family:'DM Sans',sans-serif">$73.6M</div>
+            </div>
+            <div style="color:var(--coal);font-size:20px">→</div>
+            <div>
+              <div style="font-size:10px;color:var(--lima3);opacity:0.5;font-family:'DM Sans',sans-serif;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:2px">Real MTD</div>
+              <div style="font-size:26px;font-weight:700;color:var(--white);font-family:'DM Sans',sans-serif">$64.4M</div>
+            </div>
+            <div style="color:var(--coal);font-size:20px">→</div>
+            <div>
+              <div style="font-size:10px;color:var(--lima3);opacity:0.5;font-family:'DM Sans',sans-serif;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:2px">Proyección fin de mes</div>
+              <div style="font-size:26px;font-weight:700;color:var(--lima);font-family:'DM Sans',sans-serif">~$110.8M</div>
+            </div>
+          </div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:11px;color:var(--lima3);opacity:0.5;font-family:'DM Sans',sans-serif;margin-bottom:4px">Proyección vs Meta</div>
+          <div style="font-size:36px;font-weight:700;color:var(--lima);font-family:'DM Sans',sans-serif;line-height:1">150.5%</div>
+          <div style="font-size:11px;color:var(--lima3);opacity:0.5;margin-top:3px;font-family:'Raleway',sans-serif">+$37.2M sobre la meta</div>
+        </div>
+      </div>
+      <div style="margin-top:14px">
+        <div style="font-size:10.5px;color:var(--lima3);opacity:0.4;margin-bottom:6px;font-family:'DM Sans',sans-serif">Proyección vs Meta total</div>
+        <div style="background:rgba(255,255,255,0.07);border-radius:6px;height:8px;overflow:hidden">
+          <div style="width:100%;height:8px;border-radius:6px;background:linear-gradient(90deg,var(--lima),rgba(200,255,29,0.6))"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:5px;font-size:10.5px;color:var(--lima3);opacity:0.35;font-family:'Raleway',sans-serif">
+          <span>OTC impulsa el total · K3 por debajo de meta · Rampa en buen ritmo</span>
+          <span>Pace mes: 58.1%</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px">
+
+      <!-- OTC -->
+      <div class="chart-card" style="margin-bottom:0;border-top:2px solid #a78bfa">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px">
+          <div>
+            <div style="font-size:13px;font-weight:700;color:var(--white);font-family:'DM Sans',sans-serif">OTC Koywe</div>
+            <div style="font-size:11px;color:var(--lima3);opacity:0.5;margin-top:2px">Mid/OTC</div>
+          </div>
+          <span style="background:rgba(200,255,29,0.15);color:var(--lima);padding:3px 10px;border-radius:10px;font-size:12px;font-weight:700;font-family:'DM Sans',sans-serif">188.1%</span>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px">
+          <div>
+            <div style="font-size:10px;color:var(--lima3);opacity:0.5;font-family:'DM Sans',sans-serif;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px">Meta</div>
+            <div style="font-size:16px;font-weight:700;color:var(--lima3);font-family:'DM Sans',sans-serif">$43.6M</div>
+          </div>
+          <div>
+            <div style="font-size:10px;color:var(--lima3);opacity:0.5;font-family:'DM Sans',sans-serif;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px">Real MTD</div>
+            <div style="font-size:16px;font-weight:700;color:#a78bfa;font-family:'DM Sans',sans-serif">$47.6M</div>
+          </div>
+          <div>
+            <div style="font-size:10px;color:var(--lima3);opacity:0.5;font-family:'DM Sans',sans-serif;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px">Proyección</div>
+            <div style="font-size:16px;font-weight:700;color:var(--lima);font-family:'DM Sans',sans-serif">$82.0M</div>
+          </div>
+        </div>
+        <div style="font-size:10.5px;color:var(--lima3);opacity:0.45;margin-bottom:6px;font-family:'DM Sans',sans-serif">Proyección vs Meta</div>
+        <div style="background:rgba(255,255,255,0.07);border-radius:6px;height:10px;overflow:hidden">
+          <div style="width:100%;height:10px;border-radius:6px;background:linear-gradient(90deg,rgba(200,255,29,0.5),rgba(200,255,29,0.9))"></div>
+        </div>
+        <div style="font-size:10.5px;color:var(--lima3);opacity:0.4;margin-top:5px;font-family:'Raleway',sans-serif">+$38.4M sobre la meta · Ya superó en MTD</div>
+      </div>
+
+      <!-- K3 -->
+      <div class="chart-card" style="margin-bottom:0;border-top:2px solid #4ade80">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px">
+          <div>
+            <div style="font-size:13px;font-weight:700;color:var(--white);font-family:'DM Sans',sans-serif">K3 Cloud</div>
+            <div style="font-size:11px;color:var(--lima3);opacity:0.5;margin-top:2px">Enterprise</div>
+          </div>
+          <span style="background:rgba(239,68,68,0.15);color:#f87171;padding:3px 10px;border-radius:10px;font-size:12px;font-weight:700;font-family:'DM Sans',sans-serif">16.7%</span>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px">
+          <div>
+            <div style="font-size:10px;color:var(--lima3);opacity:0.5;font-family:'DM Sans',sans-serif;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px">Meta</div>
+            <div style="font-size:16px;font-weight:700;color:var(--lima3);font-family:'DM Sans',sans-serif">$14.0M</div>
+          </div>
+          <div>
+            <div style="font-size:10px;color:var(--lima3);opacity:0.5;font-family:'DM Sans',sans-serif;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px">Real MTD</div>
+            <div style="font-size:16px;font-weight:700;color:#4ade80;font-family:'DM Sans',sans-serif">$1.4M</div>
+          </div>
+          <div>
+            <div style="font-size:10px;color:var(--lima3);opacity:0.5;font-family:'DM Sans',sans-serif;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px">Proyección</div>
+            <div style="font-size:16px;font-weight:700;color:#f87171;font-family:'DM Sans',sans-serif">~$2.3M</div>
+          </div>
+        </div>
+        <div style="font-size:10.5px;color:var(--lima3);opacity:0.45;margin-bottom:6px;font-family:'DM Sans',sans-serif">Proyección vs Meta</div>
+        <div style="background:rgba(255,255,255,0.07);border-radius:6px;height:10px;overflow:hidden">
+          <div style="width:16.7%;height:10px;border-radius:6px;background:linear-gradient(90deg,rgba(239,68,68,0.5),rgba(239,68,68,0.85))"></div>
+        </div>
+        <div style="font-size:10.5px;color:var(--lima3);opacity:0.4;margin-top:5px;font-family:'Raleway',sans-serif">-$11.7M bajo la meta · Aceleración necesaria</div>
+      </div>
+
+      <!-- RAMPA -->
+      <div class="chart-card" style="margin-bottom:0;border-top:2px solid #38bdf8">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px">
+          <div>
+            <div style="font-size:13px;font-weight:700;color:var(--white);font-family:'DM Sans',sans-serif">Rampa</div>
+            <div style="font-size:11px;color:var(--lima3);opacity:0.5;margin-top:2px">Ramp</div>
+          </div>
+          <span style="background:rgba(200,255,29,0.15);color:var(--lima);padding:3px 10px;border-radius:10px;font-size:12px;font-weight:700;font-family:'DM Sans',sans-serif">165.6%</span>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px">
+          <div>
+            <div style="font-size:10px;color:var(--lima3);opacity:0.5;font-family:'DM Sans',sans-serif;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px">Meta</div>
+            <div style="font-size:16px;font-weight:700;color:var(--lima3);font-family:'DM Sans',sans-serif">$16.0M</div>
+          </div>
+          <div>
+            <div style="font-size:10px;color:var(--lima3);opacity:0.5;font-family:'DM Sans',sans-serif;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px">Real MTD</div>
+            <div style="font-size:16px;font-weight:700;color:#38bdf8;font-family:'DM Sans',sans-serif">$15.4M</div>
+          </div>
+          <div>
+            <div style="font-size:10px;color:var(--lima3);opacity:0.5;font-family:'DM Sans',sans-serif;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px">Proyección</div>
+            <div style="font-size:16px;font-weight:700;color:var(--lima);font-family:'DM Sans',sans-serif">~$26.5M</div>
+          </div>
+        </div>
+        <div style="font-size:10.5px;color:var(--lima3);opacity:0.45;margin-bottom:6px;font-family:'DM Sans',sans-serif">Proyección vs Meta</div>
+        <div style="background:rgba(255,255,255,0.07);border-radius:6px;height:10px;overflow:hidden">
+          <div style="width:100%;height:10px;border-radius:6px;background:linear-gradient(90deg,rgba(200,255,29,0.5),rgba(200,255,29,0.9))"></div>
+        </div>
+        <div style="font-size:10.5px;color:var(--lima3);opacity:0.4;margin-top:5px;font-family:'Raleway',sans-serif">+$10.5M sobre la meta · Buen ritmo</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- PIPELINE SECTION IN OVERVIEW -->
+  <div style="margin-bottom:24px">
+    <div class="section-title" style="margin-bottom:16px;display:flex;align-items:center;gap:8px">
+      <span class="tab-dot" style="background:#fb923c;width:10px;height:10px"></span>
+      Pipeline HubSpot — Funnel de Ventas
+    </div>
+    <div class="kpis" style="margin-bottom:16px">
+      <div class="kpi" style="border-top:2px solid #f97316;background:rgba(249,115,22,0.08)"><div class="label">En Pipeline Activo</div><div class="value" style="color:#fb923c">598</div><div class="sub">Negociación → Integración</div></div>
+      <div class="kpi" style="border-top:2px solid var(--lima);background:rgba(200,255,29,0.06)"><div class="label">Clientes Activos</div><div class="value" style="color:var(--lima)">279</div><div class="sub">Deals en etapa Active</div></div>
+      <div class="kpi" style="border-top:2px solid #4ade80;background:rgba(74,222,128,0.06)"><div class="label">En Integración</div><div class="value" style="color:#4ade80">55</div><div class="sub">A punto de activarse</div></div>
+      <div class="kpi" style="border-top:2px solid var(--lav);background:rgba(204,182,234,0.06)"><div class="label">Conv. Negotiation→Active</div><div class="value" style="color:var(--lav)">88%</div><div class="sub">279 activos vs 315 en negociación</div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+      <div class="chart-card" style="margin-bottom:0;background:rgba(0,0,0,0.18)">
+        <h3 style="color:var(--white);opacity:1">Funnel por etapa</h3>
+        <div class="funnel-wrap" style="margin-bottom:0">
+          <div class="funnel-stage">
+            <div class="funnel-label" style="min-width:120px;font-size:12px;color:var(--white)">Negotiation</div>
+            <div class="funnel-bar-area"><div class="funnel-bar-bg" style="height:34px;background:rgba(0,0,0,0.25)"><div class="funnel-bar-fill" style="width:100%;height:34px;background:#f97316"><span class="funnel-pct" style="color:#fff">100%</span></div></div></div>
+            <div class="funnel-count" style="font-size:18px;color:#fb923c">315</div>
+          </div>
+          <div class="funnel-stage">
+            <div class="funnel-label" style="min-width:120px;font-size:12px;color:var(--lima3)">Offer Sent</div>
+            <div class="funnel-bar-area"><div class="funnel-bar-bg" style="height:34px;background:rgba(0,0,0,0.25)"><div class="funnel-bar-fill" style="width:80%;height:34px;background:#ea580c"><span class="funnel-pct" style="color:#fff">80%</span></div></div></div>
+            <div class="funnel-count" style="font-size:18px;color:var(--lima3)">66</div>
+          </div>
+          <div class="funnel-stage">
+            <div class="funnel-label" style="min-width:120px;font-size:12px;color:var(--lima3)">KYB / KYC Sent</div>
+            <div class="funnel-bar-area"><div class="funnel-bar-bg" style="height:34px;background:rgba(0,0,0,0.25)"><div class="funnel-bar-fill" style="width:70%;height:34px;background:#c2410c"><span class="funnel-pct" style="color:#fff">70%</span></div></div></div>
+            <div class="funnel-count" style="font-size:18px;color:var(--lima3)">106</div>
+          </div>
+          <div class="funnel-stage">
+            <div class="funnel-label" style="min-width:120px;font-size:12px;color:var(--lima3)">Contract Sent</div>
+            <div class="funnel-bar-area"><div class="funnel-bar-bg" style="height:34px;background:rgba(0,0,0,0.25)"><div class="funnel-bar-fill" style="width:34%;height:34px;background:#9a3412"><span class="funnel-pct" style="color:#fff">34%</span></div></div></div>
+            <div class="funnel-count" style="font-size:18px;color:var(--lima3)">22</div>
+          </div>
+          <div class="funnel-stage">
+            <div class="funnel-label" style="min-width:120px;font-size:12px;color:#4ade80;font-weight:600">Integration</div>
+            <div class="funnel-bar-area"><div class="funnel-bar-bg" style="height:34px;background:rgba(0,0,0,0.25)"><div class="funnel-bar-fill" style="width:55%;height:34px;background:#16a34a"><span class="funnel-pct" style="color:#fff">55%</span></div></div></div>
+            <div class="funnel-count" style="font-size:18px;color:#4ade80">55</div>
+          </div>
+          <div class="funnel-stage">
+            <div class="funnel-label" style="min-width:120px;font-size:12px;color:var(--lima);font-weight:700">Active</div>
+            <div class="funnel-bar-area"><div class="funnel-bar-bg" style="height:34px;background:rgba(0,0,0,0.25)"><div class="funnel-bar-fill" style="width:88%;height:34px;background:#84cc16"><span class="funnel-pct" style="color:#022416;font-weight:700">88%</span></div></div></div>
+            <div class="funnel-count" style="font-size:18px;color:var(--lima)">279</div>
+          </div>
+        </div>
+      </div>
+      <div class="chart-card" style="margin-bottom:0;background:rgba(0,0,0,0.18)">
+        <h3 style="color:var(--white);opacity:1">Distribución del Pipeline</h3>
+        <div class="chart-wrap"><canvas id="funnelChart"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="table-card">
+    <h3>Top 15 — Todos los segmentos</h3>
+    <table>
+      <thead><tr><th>#</th><th>Cliente / Merchant</th><th>Segmento</th><th class="num">Marzo USD</th><th class="num">Febrero USD</th><th class="num">Variación</th><th>Esta semana</th></tr></thead>
+      <tbody id="allTopBody"></tbody>
+    </table>
+  </div>
+</div>
+</div>
+
+<!-- ===== RAMPA ===== -->
+<div id="panel-rampa" class="panel">
+<div class="note-bar" style="border-left-color:#38bdf8">Excluye metaaccounts OTC Koywe y OTC K3 · Status PAYED · Tipos: currency-crypto, settlement, crypto-currency, topUp</div>
+<div class="container">
+  <div class="kpis">
+    <div class="kpi" style="border-top:2px solid #38bdf8"><div class="label">Volumen MTD</div><div class="value" style="color:#38bdf8">$15.4M</div><div class="sub">Marzo 2026</div></div>
+    <div class="kpi" style="border-top:2px solid var(--lima)"><div class="label">Clientes Activos</div><div class="value">24</div><div class="sub">MAU · 2 nuevos onboarded</div></div>
+    <div class="kpi" style="border-top:2px solid #f87171"><div class="label">Concentración Top 3</div><div class="value" style="color:#f87171">94.9%</div><div class="sub">Hapi + Merit + Nebula</div></div>
+    <div class="kpi" style="border-top:2px solid #fbbf24"><div class="label">Sin actividad semana</div><div class="value" style="color:#fbbf24">9</div><div class="sub">Activos en feb, 0 tx esta semana</div></div>
+  </div>
+  <div class="table-card" style="margin-bottom:24px">
+    <h3>Concentración de Revenue — Rampa MTD</h3>
+    <div class="conc-bar-wrap">
+      <div class="conc-bar">
+        <div class="conc-seg" style="width:45.2%;background:#0ea5e9">Hapi 45.2%</div>
+        <div class="conc-seg" style="width:41.0%;background:#38bdf8">Merit 41.0%</div>
+        <div class="conc-seg" style="width:8.7%;background:#7dd3fc">Nebula 8.7%</div>
+        <div class="conc-seg" style="width:3.9%;background:#bae6fd"></div>
+        <div class="conc-seg" style="width:1.2%;background:rgba(186,230,253,0.3)"></div>
+      </div>
+      <div class="conc-legend">
+        <div class="conc-legend-item"><div class="conc-dot" style="background:#0ea5e9"></div>Hapi $6.7M (45.2%)</div>
+        <div class="conc-legend-item"><div class="conc-dot" style="background:#38bdf8"></div>Merit $6.1M (41.0%)</div>
+        <div class="conc-legend-item"><div class="conc-dot" style="background:#7dd3fc"></div>Nebula Labs $1.3M (8.7%)</div>
+        <div class="conc-legend-item"><div class="conc-dot" style="background:#bae6fd"></div>SKY OTC $0.6M (3.9%)</div>
+        <div class="conc-legend-item"><div class="conc-dot" style="background:rgba(186,230,253,0.3)"></div>Resto $0.2M (1.2%)</div>
+      </div>
+    </div>
+  </div>
+  <!-- DESGLOSE POR PAÍS RAMPA -->
+  <div class="table-card" style="margin-bottom:24px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;flex-wrap:wrap;gap:8px">
+      <h3 style="margin-bottom:0">Volumen por País — Mercados Activos</h3>
+      <span style="font-size:11px;background:rgba(74,222,128,0.15);color:#4ade80;padding:3px 10px;border-radius:8px;font-weight:700;font-family:'DM Sans',sans-serif">✓ Datos reales · MongoDB</span>
+    </div>
+    <div style="display:flex;gap:12px;padding:6px 0 10px;border-bottom:1px solid rgba(255,255,255,0.08);font-size:10px;font-weight:700;font-family:'DM Sans',sans-serif;text-transform:uppercase;letter-spacing:0.5px;color:var(--lima3);opacity:0.45;margin-bottom:2px">
+      <span style="min-width:28px">País</span>
+      <span style="min-width:84px"></span>
+      <span style="flex:1">Actual (relleno) vs Proyección fin de mes (track) · pace 18/31 días</span>
+      <span style="min-width:150px;text-align:right">Actual / Proyección</span>
+    </div>
+    <div class="ctry-bar-row">
+      <span class="ctry-code">CO</span>
+      <span class="ctry-name">Colombia</span>
+      <div class="ctry-track">
+        <div class="ctry-proj-bar" style="width:100%"></div>
+        <div class="ctry-actual-bar" style="width:58.0%;background:#38bdf8"></div>
+      </div>
+      <span class="ctry-amounts" style="color:#38bdf8">$12.1M <span class="ctry-proj-amt">/ ~$20.8M</span></span>
+    </div>
+    <div class="ctry-bar-row">
+      <span class="ctry-code">PE</span>
+      <span class="ctry-name">Peru</span>
+      <div class="ctry-track">
+        <div class="ctry-proj-bar" style="width:18.5%"></div>
+        <div class="ctry-actual-bar" style="width:10.8%;background:#7dd3fc"></div>
+      </div>
+      <span class="ctry-amounts" style="color:#7dd3fc">$2.25M <span class="ctry-proj-amt">/ ~$3.87M</span></span>
+    </div>
+    <div class="ctry-bar-row">
+      <span class="ctry-code">MX</span>
+      <span class="ctry-name">Mexico</span>
+      <div class="ctry-track">
+        <div class="ctry-proj-bar" style="width:2.7%"></div>
+        <div class="ctry-actual-bar" style="width:1.6%;background:#bae6fd"></div>
+      </div>
+      <span class="ctry-amounts" style="color:#bae6fd">$0.33M <span class="ctry-proj-amt">/ ~$0.57M</span></span>
+    </div>
+    <div class="ctry-bar-row">
+      <span class="ctry-code">CL</span>
+      <span class="ctry-name">Chile</span>
+      <div class="ctry-track">
+        <div class="ctry-proj-bar" style="width:2.7%"></div>
+        <div class="ctry-actual-bar" style="width:1.6%;background:#bae6fd"></div>
+      </div>
+      <span class="ctry-amounts" style="color:#bae6fd">$0.33M <span class="ctry-proj-amt">/ ~$0.57M</span></span>
+    </div>
+    <div class="ctry-bar-row">
+      <span class="ctry-code">AR</span>
+      <span class="ctry-name">Argentina</span>
+      <div class="ctry-track">
+        <div class="ctry-proj-bar" style="width:2.6%"></div>
+        <div class="ctry-actual-bar" style="width:1.5%;background:#bae6fd"></div>
+      </div>
+      <span class="ctry-amounts" style="color:#bae6fd">$0.32M <span class="ctry-proj-amt">/ ~$0.55M</span></span>
+    </div>
+    <div class="ctry-total-row">
+      <span style="font-size:13px;font-weight:700;font-family:'DM Sans',sans-serif;color:var(--lima3);opacity:0.5;min-width:28px">Σ</span>
+      <span style="font-size:12px;font-family:'Raleway',sans-serif;color:var(--lima3);opacity:0.55;min-width:84px">Total Rampa</span>
+      <div style="flex:1;position:relative;height:10px;background:rgba(255,255,255,0.06);border-radius:5px">
+        <div style="position:absolute;top:0;left:0;height:100%;width:100%;background:rgba(255,255,255,0.11);border-radius:5px"></div>
+        <div style="position:absolute;top:0;left:0;height:100%;width:58.1%;background:#38bdf8;border-radius:5px"></div>
+      </div>
+      <span class="ctry-amounts">$15.4M <span class="ctry-proj-amt">/ ~$26.5M</span></span>
+      <span class="ctry-pct-badge" style="background:rgba(56,189,248,0.15);color:#38bdf8">58.1%</span>
+    </div>
+    <div style="font-size:10.5px;color:var(--lima3);opacity:0.45;margin-top:10px;font-family:'Raleway',sans-serif">✓ Datos reales · MongoDB Atlas · 18 Mar 2026</div>
+  </div>
+
+  <div class="charts-row">
+    <div class="chart-card"><h3>Top 10 Rampa — Volumen USD</h3><div class="chart-wrap"><canvas id="rTopChart"></canvas></div></div>
+    <div class="chart-card"><h3>Marzo vs Febrero — Top 8 con historia</h3><div class="chart-wrap"><canvas id="rCmpChart"></canvas></div></div>
+  </div>
+  <div class="section-title">Alertas Tempranas</div>
+  <div class="alert-grid">
+    <div class="alert-card">
+      <div class="alert-header">Sin actividad esta semana (11–17 Mar)<span class="alert-count am">9 clientes</span></div>
+      <div class="alert-row"><div><div class="alert-client">Inversiones Buil Social Media</div><div class="alert-meta">Mar: $60,258 · Feb: $59,758</div></div><div class="alert-vol">$60K</div></div>
+      <div class="alert-row"><div><div class="alert-client">Non Operational Koywe</div><div class="alert-meta">Feb: $91,999 → $0 en marzo</div></div><div class="alert-vol">$0</div></div>
+      <div class="alert-row"><div><div class="alert-client">coloca</div><div class="alert-meta">Feb: $675 → $0 en marzo</div></div><div class="alert-vol">$0</div></div>
+      <div class="alert-row"><div><div class="alert-client">Borderless · lafitech</div><div class="alert-meta">Con actividad MTD pero sin tx esta semana</div></div><div class="alert-vol" style="color:#fbbf24">Alerta</div></div>
+      <div class="alert-row"><div><div class="alert-client">Fluyez · Wbuild · splash · Solusef</div><div class="alert-meta">Activos en feb · $0 en marzo</div></div><div class="alert-vol">$0</div></div>
+    </div>
+    <div class="alert-card">
+      <div class="alert-header">Caída >30% vs Febrero<span class="alert-count red">10 clientes</span></div>
+      <div class="alert-row"><div><div class="alert-client">Hapi</div><div class="alert-meta">$13.1M → $6.7M</div></div><div class="alert-vol"><span class="change down">-48.5%</span></div></div>
+      <div class="alert-row"><div><div class="alert-client">onrampertrust1</div><div class="alert-meta">$43K → $7.2K</div></div><div class="alert-vol"><span class="change down">-83.2%</span></div></div>
+      <div class="alert-row"><div><div class="alert-client">Arch</div><div class="alert-meta">$86K → $12K</div></div><div class="alert-vol"><span class="change down">-86.1%</span></div></div>
+      <div class="alert-row"><div><div class="alert-client">Meru · Littio · beehive</div><div class="alert-meta">Caídas entre -56% y -73%</div></div><div class="alert-vol"><span class="change down">-56%+</span></div></div>
+      <div class="alert-row"><div><div class="alert-client">OnRamp · OnRamper · Borderless · Fluyez</div><div class="alert-meta">Caídas entre -49% y -87%</div></div><div class="alert-vol"><span class="change down">-49%+</span></div></div>
+    </div>
+  </div>
+  <div class="table-card">
+    <h3>Todos los clientes Rampa</h3>
+    <table><thead><tr><th>#</th><th>Empresa</th><th class="num">Marzo USD</th><th class="num">Febrero USD</th><th class="num">Var %</th><th>Esta semana</th></tr></thead>
+    <tbody id="rFullBody"></tbody></table>
+  </div>
+</div>
+</div>
+
+<!-- ===== OTC ===== -->
+<div id="panel-otc" class="panel">
+<div class="note-bar" style="border-left-color:#a78bfa">Solo metaaccount OTC Koywe · Excluye OTC K3 y Rampa · Volumen = scheduleddeals (amount/exchangeRate) · Clientes = accountId únicos</div>
+<div class="container">
+  <div class="kpis">
+    <div class="kpi" style="border-top:2px solid #a78bfa"><div class="label">Volumen MTD OTC</div><div class="value" style="color:#a78bfa">$47.6M</div><div class="sub">Marzo 2026</div></div>
+    <div class="kpi" style="border-top:2px solid #f87171"><div class="label">vs Febrero 2026</div><div class="value">$70.2M</div><div class="sub" style="color:#f87171">-32.8%</div></div>
+    <div class="kpi" style="border-top:2px solid var(--lima)"><div class="label">Clientes Activos Marzo</div><div class="value" style="color:var(--lima)">89</div><div class="sub">MAU · accountIds únicos · Metabase</div></div>
+    <div class="kpi" style="border-top:2px solid #4ade80"><div class="label">Nuevos Onboarded Marzo</div><div class="value" style="color:#4ade80">6</div><div class="sub">createdAt en accounts · OTC Koywe</div></div>
+  </div>
+  <div class="charts-row">
+    <div class="chart-card"><h3>Evolución mensual OTC (USD)</h3><div class="chart-wrap"><canvas id="oTrendChart"></canvas></div></div>
+    <div class="chart-card" style="display:flex;flex-direction:column;justify-content:center;">
+      <h3 style="margin-bottom:16px">Resumen OTC</h3>
+      <div>
+        <div class="pace-row"><span class="pace-label">Volumen Marzo MTD</span><span class="pace-value">$47,600,000</span></div>
+        <div class="pace-row"><span class="pace-label">Volumen Febrero</span><span class="pace-value">$70,203,827</span></div>
+        <div class="pace-row"><span class="pace-label">Variación</span><span class="change down">-32.8%</span></div>
+        <div class="pace-row"><span class="pace-label">Promedio diario</span><span class="pace-value">$2,644,444</span></div>
+        <div class="pace-row"><span class="pace-label">Proyección</span><span class="pace-value" style="color:#fbbf24">~$82.0M</span></div>
+        <div class="pace-row"><span class="pace-label">Activo esta semana</span><span class="active-badge"><span class="dot g"></span>Sí</span></div>
+      </div>
+      <div style="margin-top:14px">
+        <div style="font-size:11px;color:var(--lima3);opacity:0.5;margin-bottom:5px">Pace del mes (18/31 días)</div>
+        <div class="pace-bar-bg"><div class="pace-bar-fill" style="width:58.1%"></div></div>
+      </div>
+    </div>
+  </div>
+  <div class="info-card">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#C8FF1D" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    <div><strong style="color:var(--white)">OTC Koywe cayó 33.8% vs Febrero</strong><br>$70.2M en febrero → $47.6M en marzo (18 días). Sin embargo, el ritmo de $2.64M/día proyecta <strong style="color:var(--lima)">$82.0M para fin de mes</strong>, superando a febrero si se mantiene el pace.</div>
+  </div>
+
+  <!-- TOP CLIENTES OTC -->
+  <div class="table-card" style="margin-bottom:24px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+      <h3 style="margin-bottom:0">Top Clientes OTC — Volumen Marzo 2026</h3>
+      <span style="font-size:11px;background:rgba(74,222,128,0.15);color:#4ade80;padding:3px 10px;border-radius:8px;font-weight:700;font-family:'DM Sans',sans-serif">✓ Datos reales · MongoDB</span>
+    </div>
+    <table>
+      <thead><tr><th>#</th><th>Empresa</th><th>País</th><th class="num">Volumen USD</th><th class="num">% Total</th><th class="num">Deals</th></tr></thead>
+      <tbody>
+        <tr><td class="rank">1</td><td class="cname">Kushki Chile SPA</td><td>🇨🇱 CL</td><td class="num big">$17,422,918</td><td class="num"><span class="change up">38.1%</span></td><td class="num">7</td></tr>
+        <tr><td class="rank">2</td><td class="cname">PayU Peru SAC</td><td>🇵🇪 PE</td><td class="num big">$6,558,280</td><td class="num">14.4%</td><td class="num">3</td></tr>
+        <tr><td class="rank">3</td><td class="cname">Pagotoday S.A. de C.V.</td><td>🇲🇽 MX</td><td class="num big">$2,201,367</td><td class="num">4.8%</td><td class="num">15</td></tr>
+        <tr><td class="rank">4</td><td class="cname">Sylo SPA</td><td>🇨🇱 CL</td><td class="num big">$1,221,130</td><td class="num">2.7%</td><td class="num">50</td></tr>
+        <tr><td class="rank">5</td><td class="cname">MANA SPA</td><td>🇨🇱 CL</td><td class="num big">$1,179,727</td><td class="num">2.6%</td><td class="num">25</td></tr>
+        <tr><td class="rank">6</td><td class="cname">Neo Payments S.A. de C.V.</td><td>🇲🇽 MX</td><td class="num big">$1,129,402</td><td class="num">2.5%</td><td class="num">11</td></tr>
+        <tr><td class="rank">7</td><td class="cname">Bethel Digital Solutions SPA</td><td>🇨🇱 CL</td><td class="num big">$1,014,790</td><td class="num">2.2%</td><td class="num">21</td></tr>
+        <tr><td class="rank">8</td><td class="cname">Oasis Digital Solutions SPA</td><td>🇨🇱 CL</td><td class="num big">$977,179</td><td class="num">2.1%</td><td class="num">20</td></tr>
+        <tr><td class="rank">9</td><td class="cname">Tyra SPA</td><td>🇨🇱 CL</td><td class="num big">$967,263</td><td class="num">2.1%</td><td class="num">20</td></tr>
+        <tr><td class="rank">10</td><td class="cname">Supefina Payments Perú S.A.C.</td><td>🇵🇪 PE</td><td class="num big">$941,471</td><td class="num">2.1%</td><td class="num">14</td></tr>
+        <tr><td class="rank">11</td><td class="cname">Montra Digital SA de CV</td><td>🇲🇽 MX</td><td class="num big">$824,642</td><td class="num">1.8%</td><td class="num">13</td></tr>
+        <tr><td class="rank">12</td><td class="cname">Sensoria Invest SpA</td><td>🇨🇱 CL</td><td class="num big">$768,273</td><td class="num">1.7%</td><td class="num">28</td></tr>
+        <tr><td class="rank">13</td><td class="cname">ZWOLF RE S.A.P.I. de C.V.</td><td>🇲🇽 MX</td><td class="num big">$686,372</td><td class="num">1.5%</td><td class="num">9</td></tr>
+        <tr><td class="rank">14</td><td class="cname">SUFFO SPA</td><td>🇨🇱 CL</td><td class="num big">$622,282</td><td class="num">1.4%</td><td class="num">15</td></tr>
+        <tr><td class="rank">15</td><td class="cname">MT Inversiones SPA</td><td>🇨🇱 CL</td><td class="num big">$564,102</td><td class="num">1.2%</td><td class="num">169</td></tr>
+        <tr style="border-top:1px solid rgba(255,255,255,0.12)"><td></td><td style="color:var(--lima3);opacity:0.5;font-family:'Raleway',sans-serif;font-size:12px">Resto (61 clientes)</td><td></td><td class="num" style="color:var(--lima3);opacity:0.5">$8,597,271</td><td class="num" style="color:var(--lima3);opacity:0.5">18.8%</td><td></td></tr>
+        <tr style="border-top:1px solid rgba(255,255,255,0.12)"><td></td><td style="font-weight:700;font-family:'DM Sans',sans-serif;color:var(--white)">Total OTC Koywe</td><td></td><td class="num big" style="color:#a78bfa">$45,676,668</td><td class="num"><span style="font-weight:700;color:var(--lima)">100%</span></td><td class="num" style="color:var(--lima3);opacity:0.6">76 clientes</td></tr>
+      </tbody>
+    </table>
+    <div style="font-size:10.5px;color:var(--lima3);opacity:0.45;margin-top:10px;font-family:'Raleway',sans-serif">Fuente: scheduleddeals (orderType=buy) · Volumen = amount/exchangeRate · Nuevos onboarding Marzo (accounts.createdAt): JH Safe Investments, Paayer Payments, MZ Inversiones SpA</div>
+  </div>
+
+  <!-- DESGLOSE POR PAÍS OTC -->
+  <div class="table-card" style="margin-bottom:0">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;flex-wrap:wrap;gap:8px">
+      <h3 style="margin-bottom:0">Volumen por País — Mercados Activos</h3>
+      <span style="font-size:11px;background:rgba(74,222,128,0.15);color:#4ade80;padding:3px 10px;border-radius:8px;font-weight:700;font-family:'DM Sans',sans-serif">✓ Datos reales · MongoDB</span>
+    </div>
+    <div style="display:flex;gap:12px;padding:6px 0 10px;border-bottom:1px solid rgba(255,255,255,0.08);font-size:10px;font-weight:700;font-family:'DM Sans',sans-serif;text-transform:uppercase;letter-spacing:0.5px;color:var(--lima3);opacity:0.45;margin-bottom:2px">
+      <span style="min-width:28px">País</span>
+      <span style="min-width:84px"></span>
+      <span style="flex:1">Actual (relleno) vs Proyección fin de mes (track) · pace 18/31 días</span>
+      <span style="min-width:150px;text-align:right">Actual / Proyección</span>
+    </div>
+    <div class="ctry-bar-row">
+      <span class="ctry-code">CL</span>
+      <span class="ctry-name">Chile</span>
+      <div class="ctry-track">
+        <div class="ctry-proj-bar" style="width:100%"></div>
+        <div class="ctry-actual-bar" style="width:58.1%;background:#a78bfa"></div>
+      </div>
+      <span class="ctry-amounts" style="color:#a78bfa">$31.8M <span class="ctry-proj-amt">/ ~$54.8M</span></span>
+    </div>
+    <div class="ctry-bar-row">
+      <span class="ctry-code">PE</span>
+      <span class="ctry-name">Peru</span>
+      <div class="ctry-track">
+        <div class="ctry-proj-bar" style="width:32.5%"></div>
+        <div class="ctry-actual-bar" style="width:18.8%;background:#c4b5fd"></div>
+      </div>
+      <span class="ctry-amounts" style="color:#c4b5fd">$10.3M <span class="ctry-proj-amt">/ ~$17.8M</span></span>
+    </div>
+    <div class="ctry-bar-row">
+      <span class="ctry-code">MX</span>
+      <span class="ctry-name">Mexico</span>
+      <div class="ctry-track">
+        <div class="ctry-proj-bar" style="width:15.3%"></div>
+        <div class="ctry-actual-bar" style="width:8.9%;background:#ddd6fe"></div>
+      </div>
+      <span class="ctry-amounts" style="color:#ddd6fe">$4.9M <span class="ctry-proj-amt">/ ~$8.4M</span></span>
+    </div>
+    <div class="ctry-bar-row">
+      <span class="ctry-code">AR</span>
+      <span class="ctry-name">Argentina</span>
+      <div class="ctry-track">
+        <div class="ctry-proj-bar" style="width:1.6%"></div>
+        <div class="ctry-actual-bar" style="width:0.9%;background:#ddd6fe"></div>
+      </div>
+      <span class="ctry-amounts" style="color:#ddd6fe">$0.50M <span class="ctry-proj-amt">/ ~$0.86M</span></span>
+    </div>
+    <div class="ctry-total-row">
+      <span style="font-size:13px;font-weight:700;font-family:'DM Sans',sans-serif;color:var(--lima3);opacity:0.5;min-width:28px">Σ</span>
+      <span style="font-size:12px;font-family:'Raleway',sans-serif;color:var(--lima3);opacity:0.55;min-width:84px">Total OTC</span>
+      <div style="flex:1;position:relative;height:10px;background:rgba(255,255,255,0.06);border-radius:5px">
+        <div style="position:absolute;top:0;left:0;height:100%;width:100%;background:rgba(255,255,255,0.11);border-radius:5px"></div>
+        <div style="position:absolute;top:0;left:0;height:100%;width:58.1%;background:#a78bfa;border-radius:5px"></div>
+      </div>
+      <span class="ctry-amounts">$47.6M <span class="ctry-proj-amt">/ ~$82.0M</span></span>
+      <span class="ctry-pct-badge" style="background:rgba(167,139,250,0.15);color:#a78bfa">58.1%</span>
+    </div>
+    <div style="font-size:10.5px;color:var(--lima3);opacity:0.45;margin-top:10px;font-family:'Raleway',sans-serif">✓ Datos reales · MongoDB Atlas · 18 Mar 2026</div>
+  </div>
+</div>
+</div>
+
+<!-- ===== K3 ===== -->
+<div id="panel-k3" class="panel">
+<div class="note-bar" style="border-left-color:#4ade80">Merchants K3 PostgreSQL · Solo COMPLETED · Excluye 16 slugs internos · Volumen = SUM(amountIn) × tasa por moneda</div>
+<div class="container">
+  <div class="kpis">
+    <div class="kpi" style="border-top:2px solid #4ade80"><div class="label">Volumen MTD K3</div><div class="value" style="color:#4ade80">$1.4M</div><div class="sub">Marzo 2026</div></div>
+    <div class="kpi" style="border-top:2px solid var(--lav)"><div class="label">Merchants Activos</div><div class="value">22</div><div class="sub">14 activos en febrero</div></div>
+    <div class="kpi" style="border-top:2px solid var(--lima)"><div class="label">Concentración Top 3</div><div class="value">60.8%</div><div class="sub">Más diversificado que Rampa</div></div>
+    <div class="kpi" style="border-top:2px solid #fbbf24"><div class="label">Nuevos en Marzo</div><div class="value" style="color:#fbbf24">6</div><div class="sub">Sin actividad en febrero</div></div>
+  </div>
+  <div class="table-card" style="margin-bottom:24px">
+    <h3>Concentración de Revenue — K3 MTD</h3>
+    <div class="conc-bar-wrap">
+      <div class="conc-bar">
+        <div class="conc-seg" style="width:23.3%;background:#047857">ts-capital 23.3%</div>
+        <div class="conc-seg" style="width:21.8%;background:#059669">tg-inv 21.8%</div>
+        <div class="conc-seg" style="width:15.8%;background:#10b981">mt-inv 15.8%</div>
+        <div class="conc-seg" style="width:13.8%;background:#34d399">dlpz 13.8%</div>
+        <div class="conc-seg" style="width:8.3%;background:#6ee7b7">depay 8.3%</div>
+        <div class="conc-seg" style="width:5.5%;background:#a7f3d0"></div>
+        <div class="conc-seg" style="width:11.5%;background:rgba(167,243,208,0.2)"></div>
+      </div>
+      <div class="conc-legend">
+        <div class="conc-legend-item"><div class="conc-dot" style="background:#047857"></div>ts-capital $317K (23.3%)</div>
+        <div class="conc-legend-item"><div class="conc-dot" style="background:#059669"></div>tg-inversiones-spa $296K (21.8%)</div>
+        <div class="conc-legend-item"><div class="conc-dot" style="background:#10b981"></div>mt-inversiones-spa $215K (15.8%)</div>
+        <div class="conc-legend-item"><div class="conc-dot" style="background:#34d399"></div>dlpz-incz-spa $187K (13.8%)</div>
+        <div class="conc-legend-item"><div class="conc-dot" style="background:#6ee7b7"></div>depayments-s $112K (8.3%)</div>
+        <div class="conc-legend-item"><div class="conc-dot" style="background:rgba(167,243,208,0.3)"></div>Resto 15 merchants $233K (17.2%)</div>
+      </div>
+    </div>
+  </div>
+  <!-- DESGLOSE POR PAÍS K3 — datos reales PostgreSQL -->
+  <div class="table-card" style="margin-bottom:24px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;flex-wrap:wrap;gap:8px">
+      <h3 style="margin-bottom:0">Volumen por País — Meta vs Actual MTD</h3>
+      <span style="font-size:11px;background:rgba(74,222,128,0.12);color:#4ade80;padding:3px 10px;border-radius:8px;font-weight:700;font-family:'DM Sans',sans-serif">Datos reales · PostgreSQL</span>
+    </div>
+    <div style="display:flex;gap:12px;padding:6px 0 10px;border-bottom:1px solid rgba(255,255,255,0.08);font-size:10px;font-weight:700;font-family:'DM Sans',sans-serif;text-transform:uppercase;letter-spacing:0.5px;color:var(--lima3);opacity:0.45;margin-bottom:2px">
+      <span style="min-width:28px">País</span>
+      <span style="min-width:84px"></span>
+      <span style="flex:1">Actual (relleno) vs Proyección fin de mes (track) · pace 18/31 días</span>
+      <span style="min-width:150px;text-align:right">Actual / Proyección</span>
+    </div>
+    <div class="ctry-bar-row">
+      <span class="ctry-code">CL</span>
+      <span class="ctry-name">Chile</span>
+      <div class="ctry-track">
+        <div class="ctry-proj-bar" style="width:100%"></div>
+        <div class="ctry-actual-bar" style="width:58.1%;background:#4ade80"></div>
+      </div>
+      <span class="ctry-amounts">$1.07M <span class="ctry-proj-amt">/ $1.84M</span></span>
+    </div>
+    <div class="ctry-bar-row">
+      <span class="ctry-code">AR</span>
+      <span class="ctry-name">Argentina</span>
+      <div class="ctry-track">
+        <div class="ctry-proj-bar" style="width:10.5%"></div>
+        <div class="ctry-actual-bar" style="width:6.1%;background:#34d399"></div>
+      </div>
+      <span class="ctry-amounts">$111.7K <span class="ctry-proj-amt">/ $192.4K</span></span>
+    </div>
+    <div class="ctry-bar-row">
+      <span class="ctry-code">PE</span>
+      <span class="ctry-name">Peru</span>
+      <div class="ctry-track">
+        <div class="ctry-proj-bar" style="width:5.0%"></div>
+        <div class="ctry-actual-bar" style="width:2.9%;background:#6ee7b7"></div>
+      </div>
+      <span class="ctry-amounts">$53.4K <span class="ctry-proj-amt">/ $92.1K</span></span>
+    </div>
+    <div class="ctry-bar-row">
+      <span class="ctry-code">MX</span>
+      <span class="ctry-name">Mexico</span>
+      <div class="ctry-track">
+        <div class="ctry-proj-bar" style="width:2.7%"></div>
+        <div class="ctry-actual-bar" style="width:1.6%;background:#a7f3d0"></div>
+      </div>
+      <span class="ctry-amounts">$28.9K <span class="ctry-proj-amt">/ $49.8K</span></span>
+    </div>
+    <div class="ctry-bar-row">
+      <span class="ctry-code">US</span>
+      <span class="ctry-name">Dólar USD</span>
+      <div class="ctry-track">
+        <div class="ctry-proj-bar" style="width:0.4%"></div>
+        <div class="ctry-actual-bar" style="width:0.22%;background:#a7f3d0"></div>
+      </div>
+      <span class="ctry-amounts">$4.0K <span class="ctry-proj-amt">/ $6.8K</span></span>
+    </div>
+    <div class="ctry-total-row">
+      <span style="font-size:13px;font-weight:700;font-family:'DM Sans',sans-serif;color:var(--lima3);opacity:0.5;min-width:28px">Σ</span>
+      <span style="font-size:12px;font-family:'Raleway',sans-serif;color:var(--lima3);opacity:0.55;min-width:84px">Total fiat</span>
+      <div style="flex:1;position:relative;height:10px;background:rgba(255,255,255,0.06);border-radius:5px">
+        <div style="position:absolute;top:0;left:0;height:100%;width:68.9%;background:rgba(255,255,255,0.11);border-radius:5px"></div>
+        <div style="position:absolute;top:0;left:0;height:100%;width:58.1%;background:var(--lima);border-radius:5px"></div>
+      </div>
+      <span class="ctry-amounts">$1.27M <span class="ctry-proj-amt">/ $2.18M</span></span>
+      <span class="ctry-pct-badge" style="background:rgba(74,222,128,0.15);color:#4ade80">58.1%</span>
+    </div>
+    <div style="font-size:10.5px;color:var(--lima3);opacity:0.45;margin-top:10px;font-family:'Raleway',sans-serif">*Volumen fiat-origen (18 Mar 2026). Proyección = pace × 31 días. Diferencia hasta total K3 ($1.4M) = órdenes con origen USDT/crypto.</div>
+  </div>
+
+  <div class="charts-row">
+    <div class="chart-card"><h3>Top 10 K3 — Volumen USD</h3><div class="chart-wrap"><canvas id="kTopChart"></canvas></div></div>
+    <div class="chart-card"><h3>Marzo vs Febrero — Top 8 con historia</h3><div class="chart-wrap"><canvas id="kCmpChart"></canvas></div></div>
+  </div>
+  <div class="table-card">
+    <h3>Todos los Merchants K3</h3>
+    <table><thead><tr><th>#</th><th>Merchant (slug)</th><th class="num">Marzo USD</th><th class="num">Febrero USD</th><th class="num">Var %</th><th>Esta semana</th></tr></thead>
+    <tbody id="kFullBody"></tbody></table>
+  </div>
+</div>
+</div>
+
+
+<div class="footer">Koywe · Dashboard B2B · Rampa (MongoDB local) + K3 (PostgreSQL cloud) + Pipeline (HubSpot CRM) · 18 Mar 2026</div>
+
+<script>
+function showTab(name) {
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('panel-'+name).classList.add('active');
+  const map={overview:0,rampa:1,otc:2,k3:3};
+  document.querySelectorAll('.tab')[map[name]].classList.add('active');
+}
+
+const rampa=[
+  {n:"Hapi",m:6747783,f:13100756,p:-48.5,w:true},
+  {n:"Merit",m:6114092,f:3136360,p:94.9,w:true},
+  {n:"Nebula Labs SAS",m:1293113,f:0,p:null,w:true},
+  {n:"SKY OTC",m:580630,f:0,p:null,w:true},
+  {n:"Inversiones Buil Social Media",m:60258,f:59758,p:0.8,w:false},
+  {n:"Meru",m:38833,f:114043,p:-65.9,w:true},
+  {n:"Metamask",m:18306,f:24291,p:-24.6,w:true},
+  {n:"Neomoney",m:15048,f:14416,p:4.4,w:true},
+  {n:"Arch",m:11982,f:86377,p:-86.1,w:true},
+  {n:"Littio",m:10245,f:37985,p:-73,w:true},
+  {n:"beehive",m:8892,f:20375,p:-56.4,w:true},
+  {n:"OnRamp",m:8665,f:17041,p:-49.2,w:true},
+  {n:"onrampertrust1",m:7232,f:43041,p:-83.2,w:true},
+  {n:"lafitech",m:729,f:879,p:-17.1,w:false},
+  {n:"OnRamper",m:412,f:1724,p:-76.1,w:true},
+  {n:"Borderless",m:333,f:1582,p:-78.9,w:false},
+  {n:"Fluyez",m:8,f:60,p:-86.8,w:false},
+  {n:"Wbuild",m:0,f:148,p:-100,w:false},
+  {n:"splash",m:0,f:99,p:-100,w:false},
+  {n:"Solusef",m:0,f:50,p:-100,w:false},
+  {n:"Non Operational Koywe",m:0,f:91999,p:-100,w:false},
+  {n:"coloca",m:0,f:675,p:-100,w:false}
+];
+const k3=[
+  {n:"ts-capital",m:316842,f:8945,p:3442,w:true},
+  {n:"tg-inversiones-spa-3769",m:295789,f:0,p:null,w:true},
+  {n:"mt-inversiones-spa-6980",m:214737,f:0,p:null,w:true},
+  {n:"dlpz-incz-spa-3017",m:187371,f:0,p:null,w:true},
+  {n:"depayments-s",m:112365,f:79076,p:42.1,w:true},
+  {n:"blockchain-com",m:75232,f:0,p:null,w:true},
+  {n:"blue-ocean-tech-sac",m:63501,f:187648,p:-66.2,w:true},
+  {n:"vanher-capital-spa-6063",m:49796,f:13684,p:263.9,w:true},
+  {n:"lank-latam-llc",m:28914,f:117164,p:-75.3,w:true},
+  {n:"aerowise-sas",m:6957,f:17896,p:-61.1,w:false},
+  {n:"oceana-hospitality-spa",m:3775,f:942,p:300.3,w:true},
+  {n:"clientes-extranjeros",m:2695,f:0,p:null,w:true},
+  {n:"tomas-0294",m:1379,f:0,p:null,w:true},
+  {n:"supermatch",m:146,f:678,p:-78.5,w:false},
+  {n:"identi-s",m:77,f:178,p:-56.7,w:false},
+  {n:"holdings-bpo",m:72,f:102567,p:-99.9,w:false},
+  {n:"lank-web-mx",m:0,f:70395,p:-100,w:false},
+  {n:"lank-chile-spa",m:0,f:33684,p:-100,w:false},
+  {n:"alan-straume",m:0,f:10840,p:-100,w:false},
+  {n:"merchant-cop",m:0,f:11354,p:-100,w:false},
+];
+
+function fmt(v){return v>0?'$'+v.toLocaleString('en-US',{maximumFractionDigits:0}):'—';}
+function pb(p){
+  if(p===null)return'<span class="change new">Nuevo</span>';
+  if(p>=5)return`<span class="change up">+${p}%</span>`;
+  if(p<=-30)return`<span class="change down">${p}%</span>`;
+  if(p<-5)return`<span class="change down">${p}%</span>`;
+  return`<span class="change flat">${p>0?'+':''}${p}%</span>`;
+}
+function wb(w){return w?'<span class="active-badge"><span class="dot g"></span>Sí</span>':'<span class="active-badge"><span class="dot r"></span>No</span>';}
+
+document.getElementById('rFullBody').innerHTML=rampa.map((c,i)=>`<tr><td class="rank">${i+1}</td><td class="cname">${c.n}</td><td class="num big">${fmt(c.m)}</td><td class="num">${fmt(c.f)}</td><td class="num">${pb(c.p)}</td><td>${wb(c.w)}</td></tr>`).join('');
+document.getElementById('kFullBody').innerHTML=k3.map((c,i)=>`<tr><td class="rank">${i+1}</td><td class="cname mono">${c.n}</td><td class="num big">${fmt(c.m)}</td><td class="num">${fmt(c.f)}</td><td class="num">${pb(c.p)}</td><td>${wb(c.w)}</td></tr>`).join('');
+
+const otc=[{n:"OTC Koywe",m:47200000,f:70203827,p:-33.8,w:true,s:"OTC"}];
+const allData=[...otc,...rampa.map(c=>({...c,s:"Rampa"})),...k3.map(c=>({...c,s:"K3"}))].sort((a,b)=>b.m-a.m).slice(0,15);
+const segCols={OTC:'rgba(167,139,250,0.2)|#a78bfa',Rampa:'rgba(56,189,248,0.2)|#38bdf8',K3:'rgba(74,222,128,0.2)|#4ade80'};
+document.getElementById('allTopBody').innerHTML=allData.map((c,i)=>{const[bg,fg]=segCols[c.s].split('|');return`<tr><td class="rank">${i+1}</td><td class="cname${c.s==='K3'?' mono':''}">${c.n}</td><td><span class="seg-badge" style="background:${bg};color:${fg}">${c.s}</span></td><td class="num big">${fmt(c.m)}</td><td class="num">${fmt(c.f)}</td><td class="num">${pb(c.p)}</td><td>${wb(c.w)}</td></tr>`;}).join('');
+
+const rC=['#0ea5e9','#38bdf8','#7dd3fc','#bae6fd','#0284c7','#0369a1','#075985','#0c4a6e','#0ea5e9','#38bdf8'];
+const kC=['#047857','#059669','#10b981','#34d399','#0d9488','#0f766e','#6ee7b7','#047857','#059669','#10b981'];
+
+const gridOpts={color:'rgba(255,255,255,0.06)'};
+const tickColor='rgba(239,255,187,0.6)';
+const fmtY=v=>v>=1e6?'$'+Math.round(v/1e6)+'M':v>=1e3?'$'+Math.round(v/1e3)+'K':'$'+v;
+const ttFmt=ctx=>'$'+ctx.parsed.y.toLocaleString('en-US',{maximumFractionDigits:0});
+
+new Chart(document.getElementById('segChart'),{type:'bar',data:{labels:['Rampa','OTC Koywe','K3'],datasets:[{data:[15400000,47600000,1359757],backgroundColor:['rgba(56,189,248,0.7)','rgba(167,139,250,0.7)','rgba(74,222,128,0.7)'],borderRadius:8,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ttFmt}}},scales:{y:{ticks:{callback:fmtY,color:tickColor},grid:gridOpts},x:{ticks:{color:tickColor},grid:{display:false}}}}});
+
+new Chart(document.getElementById('mvfChart'),{type:'bar',data:{labels:['Rampa','OTC Koywe','K3'],datasets:[{label:'Febrero',data:[18361085,70203827,644479],backgroundColor:['rgba(56,189,248,0.25)','rgba(167,139,250,0.25)','rgba(74,222,128,0.25)'],borderRadius:3},{label:'Marzo',data:[15400000,47600000,1359757],backgroundColor:['rgba(56,189,248,0.7)','rgba(167,139,250,0.7)','rgba(74,222,128,0.7)'],borderRadius:3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{color:tickColor,font:{size:11}}},tooltip:{callbacks:{label:ctx=>ctx.dataset.label+': $'+ctx.parsed.y.toLocaleString('en-US',{maximumFractionDigits:0})}}},scales:{y:{ticks:{callback:fmtY,color:tickColor},grid:gridOpts},x:{ticks:{color:tickColor},grid:{display:false}}}}});
+
+new Chart(document.getElementById('rTopChart'),{type:'bar',data:{labels:rampa.slice(0,10).map(c=>c.n.length>16?c.n.slice(0,14)+'…':c.n),datasets:[{data:rampa.slice(0,10).map(c=>c.m),backgroundColor:rC,borderRadius:5,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ttFmt}}},scales:{y:{ticks:{callback:fmtY,color:tickColor},grid:gridOpts},x:{ticks:{color:tickColor,font:{size:10}},grid:{display:false}}}}});
+
+const r8=rampa.filter(c=>c.f>0).slice(0,8);
+new Chart(document.getElementById('rCmpChart'),{type:'bar',data:{labels:r8.map(c=>c.n.length>13?c.n.slice(0,11)+'…':c.n),datasets:[{label:'Febrero',data:r8.map(c=>c.f),backgroundColor:'rgba(56,189,248,0.25)',borderRadius:3},{label:'Marzo',data:r8.map(c=>c.m),backgroundColor:'rgba(56,189,248,0.7)',borderRadius:3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{color:tickColor,font:{size:11}}},tooltip:{callbacks:{label:ctx=>ctx.dataset.label+': $'+ctx.parsed.y.toLocaleString('en-US',{maximumFractionDigits:0})}}},scales:{y:{ticks:{callback:fmtY,color:tickColor},grid:gridOpts},x:{ticks:{color:tickColor,font:{size:10}},grid:{display:false}}}}});
+
+new Chart(document.getElementById('oTrendChart'),{type:'bar',data:{labels:['Febrero 2026','Marzo MTD (18d)','Proyección Marzo'],datasets:[{data:[70203827,47600000,82000000],backgroundColor:['rgba(167,139,250,0.4)','rgba(167,139,250,0.75)','rgba(200,255,29,0.3)'],borderRadius:6,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ttFmt}}},scales:{y:{ticks:{callback:v=>'$'+Math.round(v/1e6)+'M',color:tickColor},grid:gridOpts},x:{ticks:{color:tickColor},grid:{display:false}}}}});
+
+new Chart(document.getElementById('kTopChart'),{type:'bar',data:{labels:k3.slice(0,10).map(c=>c.n.length>18?c.n.slice(0,16)+'…':c.n),datasets:[{data:k3.slice(0,10).map(c=>c.m),backgroundColor:kC,borderRadius:5,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ttFmt}}},scales:{y:{ticks:{callback:v=>v>=1e3?'$'+Math.round(v/1e3)+'K':'$'+v,color:tickColor},grid:gridOpts},x:{ticks:{color:tickColor,font:{size:9}},grid:{display:false}}}}});
+
+const k8=k3.filter(c=>c.f>0).slice(0,8);
+new Chart(document.getElementById('kCmpChart'),{type:'bar',data:{labels:k8.map(c=>c.n.length>14?c.n.slice(0,12)+'…':c.n),datasets:[{label:'Febrero',data:k8.map(c=>c.f),backgroundColor:'rgba(74,222,128,0.25)',borderRadius:3},{label:'Marzo',data:k8.map(c=>c.m),backgroundColor:'rgba(74,222,128,0.7)',borderRadius:3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{color:tickColor,font:{size:11}}},tooltip:{callbacks:{label:ctx=>ctx.dataset.label+': $'+ctx.parsed.y.toLocaleString('en-US',{maximumFractionDigits:0})}}},scales:{y:{ticks:{callback:v=>v>=1e3?'$'+Math.round(v/1e3)+'K':'$'+v,color:tickColor},grid:gridOpts},x:{ticks:{color:tickColor,font:{size:9}},grid:{display:false}}}}});
+
+new Chart(document.getElementById('funnelChart'),{type:'doughnut',data:{labels:['Negotiation','KYB/KYC Sent','Offer Sent','Integration','Contract Sent'],datasets:[{data:[315,106,66,55,22],backgroundColor:['#f97316','#c2410c','#ea580c','#16a34a','#9a3412'],borderColor:'rgba(0,0,0,0.3)',borderWidth:2}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{color:'#efffbb',font:{size:11},padding:14,boxWidth:14}},tooltip:{callbacks:{label:ctx=>ctx.label+': '+ctx.parsed+' deals'}}}}});
+</script>
+</body>
+</html>
