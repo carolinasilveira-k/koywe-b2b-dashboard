@@ -3,7 +3,7 @@ name: Update B2B Dashboard
 on:
   schedule:
     - cron: '0 12 * * *'   # 9am Colombia / 8am Chile todos los días
-  workflow_dispatch:         # Botón manual en GitHub Actions
+  workflow_dispatch:
 
 jobs:
   update:
@@ -17,11 +17,12 @@ jobs:
         with:
           python-version: '3.11'
 
-      - run: pip install "pymongo[srv]" pyopenssl
+      - run: pip install "pymongo[srv]" pyopenssl requests
 
       - name: Run updater
         env:
           MONGODB_URI: ${{ secrets.MONGODB_URI }}
+          METABASE_API_KEY: ${{ secrets.METABASE_API_KEY }}
         run: python update_dashboard.py
 
       - name: Commit and push to personal repo
