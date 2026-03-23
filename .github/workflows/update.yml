@@ -34,12 +34,11 @@ jobs:
 
       - name: Push updated index.html to koyweforest/b2b-dashboard
         run: |
-          git clone https://x-access-token:${{ secrets.KOYWE_REPO_TOKEN }}@github.com/koyweforest/b2b-dashboard.git koywe-repo
+          git clone --branch gh-pages https://x-access-token:${{ secrets.KOYWE_REPO_TOKEN }}@github.com/koyweforest/b2b-dashboard.git koywe-repo
           cp index.html koywe-repo/index.html
           cd koywe-repo
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git checkout gh-pages
           git add index.html
           git diff --staged --quiet || git commit -m "Auto-update $(date -u +%Y-%m-%d)"
           git push origin gh-pages
