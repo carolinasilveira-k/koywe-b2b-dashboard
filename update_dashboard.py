@@ -2,7 +2,7 @@
 """
 Koywe B2B Dashboard — Auto-updater
 - Rampa: K3 PostgreSQL via Metabase API (metabase.koywe.com)
-- K3:    K3 PostgreSQL via Metabase API (ALL types, SUM(amountIn) × live FX rate)
+- K3:    K3 PostgreSQL via Metabase API (ALL types, SUM(amountIn) x live FX rate)
 - OTC:   MongoDB Atlas (scheduleddeals collection)
 Runs daily via GitHub Actions.
 """
@@ -264,7 +264,7 @@ html = re.sub(r'(pace-label">Proyecci\u00f3n</span><span class="pace-value"[^>]*
               rf'\g<1>~{fmt(otc_proj)}\g<2>', html)
 
 # segChart JS data: [rampa, otc, k3]
-html = re.sub(r"(segChart\),\{type:'bar',data:\{labels:\['Rampa','OTC Koywe','K3'\],datasets:\[\{data:\[)[\d,]+(\])",
+html = re.sub(r"(getElementById\('segChart'\),\{type:'bar',data:\{labels:\['Rampa','OTC Koywe','K3'\],datasets:\[\{data:\[)[\d,]+(\])",
               rf'\g<1>{int(rampa_vol)},{int(otc_vol)},{int(k3_vol)}\g<2>', html)
 
 with open("index.html", "w", encoding="utf-8") as f:
