@@ -144,18 +144,24 @@ GROUP BY COALESCE(q."originCurrencySymbol", 'CLP')
 
 # ââ OTC via MongoDB âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 def query_otc(col):
-    col_deals = col.database["scheduleddeals"]
+    # paymentorders.metaAccount is stored as ObjectId — use OTC_KOYWE directly (not str())
+    # Formula: Sum(currencyAmount / lastPriceUsd) — matches Metabase "Volumen OTC MTD" card
+    col_po = col.database["paymentorders"]
     pipeline = [
         {"$match": {
             "createdAt": {"$gte": MONTH_START, "$lt": MONTH_END},
-            "metaAccountId": str(OTC_KOYWE),
-            "orderType": "scheduled_deal_to_buy"
+            "metaAccount": OTC_KOYWE,   # ObjectId, NOT str(OTC_KOYWE)
+            "status": "PAYED",
+            "orderType": {"$in": ["crypto-currency", "currency-crypto", "settlement", "topUp"]},
+            "lastPriceUsd": {"$gt": 0}
         }},
-        {"$addFields": {"amountUsd": {"$divide": ["$amount", "$exchangeRate"]}}},
-        {"$group": {"_id": None, "totalUsd": {"$sum": "$amountUsd"},
-                    "accounts": {"$addToSet": "$accountId"}}}
+        {"$group": {
+            "_id": None,
+            "totalUsd": {"$sum": {"$divide": ["$currencyAmount", "$lastPriceUsd"]}},
+            "accounts": {"$addToSet": "$accountId"}
+        }}
     ]
-    r = list(col_deals.aggregate(pipeline))
+    r = list(col_po.aggregate(pipeline))
     total = r[0]["totalUsd"] if r else 0
     n_accounts = len(r[0]["accounts"]) if r else 0
     return total, n_accounts
