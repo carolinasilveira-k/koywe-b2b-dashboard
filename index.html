@@ -205,7 +205,7 @@ tbody td { padding:9px 12px; color:var(--lima3); }
         <h2>OTC Koywe</h2>
         <span class="seg-badge" style="background:rgba(167,139,250,0.15);color:#a78bfa">89 clientes</span>
       </div>
-      <div class="seg-vol" style="color:#a78bfa">$0</div>
+      <div class="seg-vol" style="color:#a78bfa">$62.0M</div>
       <div class="seg-sub">Volumen MTD USD · Proyección $80.9M</div>
       <div style="display:flex;gap:14px;margin-top:10px;font-size:11.5px">
         <span style="color:#f87171;font-weight:600">-32.8% vs Feb</span>
@@ -259,12 +259,12 @@ tbody td { padding:9px 12px; color:var(--lima3); }
             <div style="color:var(--coal);font-size:20px">→</div>
             <div>
               <div style="font-size:10px;color:var(--lima3);opacity:0.5;font-family:'DM Sans',sans-serif;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:2px">Real MTD</div>
-              <div style="font-size:26px;font-weight:700;color:var(--white);font-family:'DM Sans',sans-serif">$19.7M</div>
+              <div style="font-size:26px;font-weight:700;color:var(--white);font-family:'DM Sans',sans-serif">$81.8M</div>
             </div>
             <div style="color:var(--coal);font-size:20px">→</div>
             <div>
               <div style="font-size:10px;color:var(--lima3);opacity:0.5;font-family:'DM Sans',sans-serif;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:2px">Proyección fin de mes</div>
-              <div style="font-size:26px;font-weight:700;color:var(--lima);font-family:'DM Sans',sans-serif">~$26.6M</div>
+              <div style="font-size:26px;font-weight:700;color:var(--lima);font-family:'DM Sans',sans-serif">~$110.2M</div>
             </div>
           </div>
         </div>
@@ -304,7 +304,7 @@ tbody td { padding:9px 12px; color:var(--lima3); }
           </div>
           <div>
             <div style="font-size:10px;color:var(--lima3);opacity:0.5;font-family:'DM Sans',sans-serif;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px">Real MTD</div>
-            <div style="font-size:16px;font-weight:700;color:#a78bfa;font-family:'DM Sans',sans-serif">$0</div>
+            <div style="font-size:16px;font-weight:700;color:#a78bfa;font-family:'DM Sans',sans-serif">$62.0M</div>
           </div>
           <div>
             <div style="font-size:10px;color:var(--lima3);opacity:0.5;font-family:'DM Sans',sans-serif;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px">Proyección</div>
@@ -581,7 +581,7 @@ tbody td { padding:9px 12px; color:var(--lima3); }
 <div class="note-bar" style="border-left-color:#a78bfa">Solo metaaccount OTC Koywe · Excluye OTC K3 y Rampa · Volumen = scheduleddeals (amount/exchangeRate) · Clientes = accountId únicos</div>
 <div class="container">
   <div class="kpis">
-    <div class="kpi" style="border-top:2px solid #a78bfa"><div class="label">Volumen MTD OTC</div><div class="value" style="color:#a78bfa">$0</div><div class="sub">Marzo 2026</div></div>
+    <div class="kpi" style="border-top:2px solid #a78bfa"><div class="label">Volumen MTD OTC</div><div class="value" style="color:#a78bfa">$62.0M</div><div class="sub">Marzo 2026</div></div>
     <div class="kpi" style="border-top:2px solid #f87171"><div class="label">vs Febrero 2026</div><div class="value">$70.2M</div><div class="sub" style="color:#f87171">-32.8%</div></div>
     <div class="kpi" style="border-top:2px solid var(--lima)"><div class="label">Clientes Activos Marzo</div><div class="value" style="color:var(--lima)">89</div><div class="sub">MAU · accountIds únicos · Metabase</div></div>
     <div class="kpi" style="border-top:2px solid #4ade80"><div class="label">Nuevos Onboarded Marzo</div><div class="value" style="color:#4ade80">6</div><div class="sub">createdAt en accounts · OTC Koywe</div></div>
@@ -591,10 +591,10 @@ tbody td { padding:9px 12px; color:var(--lima3); }
     <div class="chart-card" style="display:flex;flex-direction:column;justify-content:center;">
       <h3 style="margin-bottom:16px">Resumen OTC</h3>
       <div>
-        <div class="pace-row"><span class="pace-label">Volumen Marzo MTD</span><span class="pace-value">$0</span></div>
+        <div class="pace-row"><span class="pace-label">Volumen Marzo MTD</span><span class="pace-value">$62,023,644</span></div>
         <div class="pace-row"><span class="pace-label">Volumen Febrero</span><span class="pace-value">$70,203,827</span></div>
         <div class="pace-row"><span class="pace-label">Variación</span><span class="change down">-32.8%</span></div>
-        <div class="pace-row"><span class="pace-label">Promedio diario</span><span class="pace-value">$0</span></div>
+        <div class="pace-row"><span class="pace-label">Promedio diario</span><span class="pace-value">$2,696,680</span></div>
         <div class="pace-row"><span class="pace-label">Proyección</span><span class="pace-value" style="color:#fbbf24">~$80.9M</span></div>
         <div class="pace-row"><span class="pace-label">Activo esta semana</span><span class="active-badge"><span class="dot g"></span>Sí</span></div>
       </div>
@@ -902,7 +902,7 @@ const tickColor='rgba(239,255,187,0.6)';
 const fmtY=v=>v>=1e6?'$'+Math.round(v/1e6)+'M':v>=1e3?'$'+Math.round(v/1e3)+'K':'$'+v;
 const ttFmt=ctx=>'$'+ctx.parsed.y.toLocaleString('en-US',{maximumFractionDigits:0});
 
-new Chart(document.getElementById('segChart'),{type:'bar',data:{labels:['Rampa','OTC Koywe','K3'],datasets:[{data:[17649028,0,2092167],backgroundColor:['rgba(56,189,248,0.7)','rgba(167,139,250,0.7)','rgba(74,222,128,0.7)'],borderRadius:8,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ttFmt}}},scales:{y:{ticks:{callback:fmtY,color:tickColor},grid:gridOpts},x:{ticks:{color:tickColor},grid:{display:false}}}}});
+new Chart(document.getElementById('segChart'),{type:'bar',data:{labels:['Rampa','OTC Koywe','K3'],datasets:[{data:[17649028,62023644,2092167],backgroundColor:['rgba(56,189,248,0.7)','rgba(167,139,250,0.7)','rgba(74,222,128,0.7)'],borderRadius:8,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ttFmt}}},scales:{y:{ticks:{callback:fmtY,color:tickColor},grid:gridOpts},x:{ticks:{color:tickColor},grid:{display:false}}}}});
 
 new Chart(document.getElementById('mvfChart'),{type:'bar',data:{labels:['Rampa','OTC Koywe','K3'],datasets:[{label:'Febrero',data:[18361085,70203827,644479],backgroundColor:['rgba(56,189,248,0.25)','rgba(167,139,250,0.25)','rgba(74,222,128,0.25)'],borderRadius:3},{label:'Marzo',data:[15400000,47600000,1359757],backgroundColor:['rgba(56,189,248,0.7)','rgba(167,139,250,0.7)','rgba(74,222,128,0.7)'],borderRadius:3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{color:tickColor,font:{size:11}}},tooltip:{callbacks:{label:ctx=>ctx.dataset.label+': $'+ctx.parsed.y.toLocaleString('en-US',{maximumFractionDigits:0})}}},scales:{y:{ticks:{callback:fmtY,color:tickColor},grid:gridOpts},x:{ticks:{color:tickColor},grid:{display:false}}}}});
 
