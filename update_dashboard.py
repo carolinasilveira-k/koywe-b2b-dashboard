@@ -3,7 +3,7 @@
 Koywe B2B Dashboard â Auto-updater
 - Rampa: K3 PostgreSQL via Metabase API (metabase.koywe.com)
 - K3:    K3 PostgreSQL via Metabase API (ALL types, SUM(amountIn) Ã live FX rate)
-- OTC:   MongoDB Atlas (paymentorders collection, amountCrypto in USDT)
+- OTC:   MongoDB Atlas (scheduleddeals collection, amount/exchangeRate)
 Runs daily via GitHub Actions.
 """
 import os, re, requests
@@ -144,19 +144,18 @@ GROUP BY COALESCE(q."originCurrencySymbol", 'CLP')
 
 # ââ OTC via MongoDB âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 def query_otc(col):
-    # paymentorders: amountCrypto is in USDT (â USD) for OTC deals
-    col_po = col.database["paymentorders"]
+    col_deals = col.database["scheduleddeals"]
     pipeline = [
         {"$match": {
             "createdAt": {"$gte": MONTH_START, "$lt": MONTH_END},
-            "metaAccount": str(OTC_KOYWE),
-            "status": "PAYED",
-            "orderType": {"$in": ["crypto-currency", "currency-crypto", "settlement", "topUp"]}
+            "metaAccountId": str(OTC_KOYWE),
+            "orderType": "scheduled_deal_to_buy"
         }},
-        {"$group": {"_id": None, "totalUsd": {"$sum": "$amountCrypto"},
+        {"$addFields": {"amountUsd": {"$divide": ["$amount", "$exchangeRate"]}}},
+        {"$group": {"_id": None, "totalUsd": {"$sum": "$amountUsd"},
                     "accounts": {"$addToSet": "$accountId"}}}
     ]
-    r = list(col_po.aggregate(pipeline))
+    r = list(col_deals.aggregate(pipeline))
     total = r[0]["totalUsd"] if r else 0
     n_accounts = len(r[0]["accounts"]) if r else 0
     return total, n_accounts
