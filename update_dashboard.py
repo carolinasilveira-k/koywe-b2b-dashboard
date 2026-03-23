@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-Koywe B2B Dashboard — Auto-updater
+Koywe B2B Dashboard â Auto-updater
 - Rampa: K3 PostgreSQL via Metabase API (metabase.koywe.com)
-- K3:    K3 PostgreSQL via Metabase API (ALL types, SUM(amountIn) x live FX rate)
-- OTC:   MongoDB Atlas (scheduleddeals collection)
+- K3:    K3 PostgreSQL via Metabase API (ALL types, SUM(amountIn) Ã live FX rate)
+- OTC:   MongoDB Atlas (paymentorders collection, amountCrypto in USDT)
 Runs daily via GitHub Actions.
 """
 import os, re, requests
@@ -11,7 +11,7 @@ from datetime import datetime
 from pymongo import MongoClient
 from bson import ObjectId
 
-# ── Config ────────────────────────────────────────────────────────────────────
+# ââ Config ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 MONGO_URI        = os.environ["MONGODB_URI"]
 METABASE_API_KEY = os.environ["METABASE_API_KEY"]
 METABASE_URL     = "https://metabase.koywe.com"
@@ -51,7 +51,7 @@ def metabase_query(sql):
     )
     return resp.json().get("data", {}).get("rows", [])
 
-# ── Rampa via K3 Metabase API ─────────────────────────────────────────────────
+# ââ Rampa via K3 Metabase API âââââââââââââââââââââââââââââââââââââââââââââââââ
 def query_rampa_k3():
     month_str = MONTH_START.strftime("%Y-%m-%d")
 
@@ -87,9 +87,9 @@ WHERE o."createdAt" >= '{month_str}'
     mau = int(mau_rows[0][0] or 0) if mau_rows else 0
     return vol, mau
 
-# ── K3 Cloud via K3 Metabase API ─────────────────────────────────────────────
+# ââ K3 Cloud via K3 Metabase API âââââââââââââââââââââââââââââââââââââââââââââ
 def query_k3():
-    """ALL order types, SUM(amountIn) x live FX rate per currency."""
+    """ALL order types, SUM(amountIn) Ã live FX rate per currency."""
     month_str = MONTH_START.strftime("%Y-%m-%d")
 
     # Get live USD FX rates (1 USD = X units of currency)
@@ -114,7 +114,7 @@ def query_k3():
     fx_rates["USDC"] = 1.0
 
     # Query ALL types, group by origin currency
-    # Null originCurrencySymbol = ONRAMP orders without a Quote -> treat as CLP
+    # Null originCurrencySymbol = ONRAMP orders without a Quote â treat as CLP
     sql = f"""
 SELECT
   COALESCE(q."originCurrencySymbol", 'CLP') as currency,
@@ -137,30 +137,31 @@ GROUP BY COALESCE(q."originCurrencySymbol", 'CLP')
             usd = amount_in / rate
         else:
             usd = 0
-        print(f"    K3 {currency}: {amount_in:,.0f} -> ${usd:,.0f}")
+        print(f"    K3 {currency}: {amount_in:,.0f} â ${usd:,.0f}")
         total_usd += usd
 
     return total_usd
 
-# ── OTC via MongoDB ───────────────────────────────────────────────────────────
+# ââ OTC via MongoDB âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 def query_otc(col):
-    col_deals = col.database["scheduleddeals"]
+    # paymentorders: amountCrypto is in USDT (â USD) for OTC deals
+    col_po = col.database["paymentorders"]
     pipeline = [
         {"$match": {
             "createdAt": {"$gte": MONTH_START, "$lt": MONTH_END},
-            "metaAccountId": str(OTC_KOYWE),
-            "orderType": "scheduled_deal_to_buy"
+            "metaAccount": str(OTC_KOYWE),
+            "status": "PAYED",
+            "orderType": {"$in": ["crypto-currency", "currency-crypto", "settlement", "topUp"]}
         }},
-        {"$addFields": {"amountUsd": {"$divide": ["$amount", "$exchangeRate"]}}},
-        {"$group": {"_id": None, "totalUsd": {"$sum": "$amountUsd"},
+        {"$group": {"_id": None, "totalUsd": {"$sum": "$amountCrypto"},
                     "accounts": {"$addToSet": "$accountId"}}}
     ]
-    r = list(col_deals.aggregate(pipeline))
+    r = list(col_po.aggregate(pipeline))
     total = r[0]["totalUsd"] if r else 0
     n_accounts = len(r[0]["accounts"]) if r else 0
     return total, n_accounts
 
-# ── Run queries ───────────────────────────────────────────────────────────────
+# ââ Run queries âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 print("Querying Rampa (K3)...")
 rampa_vol, rampa_mau = query_rampa_k3()
 
@@ -186,16 +187,16 @@ print(f"OTC:   {fmt(otc_vol)} proj {fmt(otc_proj)} MAU {otc_mau}")
 print(f"Total: {fmt(total_vol)} proj {fmt(total_proj)}")
 print(f"Pace:  {DAYS_ELAPSED}/{DAYS_IN_MONTH} = {PACE*100:.1f}%")
 
-# ── Update HTML ───────────────────────────────────────────────────────────────
+# ââ Update HTML âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 with open("index.html", "r", encoding="utf-8") as f:
     html = f.read()
 
 new_date = TODAY.strftime("%-d %b %Y")
 html = re.sub(r'Actualizado \d+ \w+ \d+', f'Actualizado {new_date}', html)
-html = re.sub(r'pace \d+/\d+ d\u00edas', f'pace {DAYS_ELAPSED}/{DAYS_IN_MONTH} d\u00edas', html)
-html = re.sub(r'Pace: \d+/\d+ d\u00edas', f'Pace: {DAYS_ELAPSED}/{DAYS_IN_MONTH} d\u00edas', html)
-html = re.sub(r'\d+/\d+ d\u00edas \([\d.]+% del mes\)',
-              f'{DAYS_ELAPSED}/{DAYS_IN_MONTH} d\u00edas ({PACE*100:.1f}% del mes)', html)
+html = re.sub(r'pace \d+/\d+ dÃ­as', f'pace {DAYS_ELAPSED}/{DAYS_IN_MONTH} dÃ­as', html)
+html = re.sub(r'Pace: \d+/\d+ dÃ­as', f'Pace: {DAYS_ELAPSED}/{DAYS_IN_MONTH} dÃ­as', html)
+html = re.sub(r'\d+/\d+ dÃ­as \([\d.]+% del mes\)',
+              f'{DAYS_ELAPSED}/{DAYS_IN_MONTH} dÃ­as ({PACE*100:.1f}% del mes)', html)
 
 # Rampa seg-vol (blue)
 html = re.sub(r'(<div class="seg-vol" style="color:#38bdf8">)\$[\d.]+[MK]?(</div>)',
@@ -208,29 +209,29 @@ html = re.sub(r'(<div class="seg-vol" style="color:#4ade80">)\$[\d.]+[MK]?(</div
               rf'\g<1>{fmt(k3_vol)}\g<2>', html)
 
 # Rampa seg-sub MAU
-html = re.sub(r'(Volumen MTD USD \u00b7 )\d+( MAU)',
+html = re.sub(r'(Volumen MTD USD Â· )\d+( MAU)',
               rf'\g<1>{rampa_mau}\g<2>', html)
-# OTC seg-sub proyeccion
-html = re.sub(r'(Volumen MTD USD \u00b7 Proyecci\u00f3n )\$[\d.]+[MK]?',
+# OTC seg-sub proyecciÃ³n
+html = re.sub(r'(Volumen MTD USD Â· ProyecciÃ³n )\$[\d.]+[MK]?',
               rf'\g<1>{fmt(otc_proj)}', html)
 
 # Total actual
 html = re.sub(r'(font-size:26px;font-weight:700;color:var\(--white\)[^>]+>)\$[\d.]+[MK]?(</div>)',
               rf'\g<1>{fmt(total_vol)}\g<2>', html)
-# Total proyeccion
+# Total proyecciÃ³n
 html = re.sub(r'(font-size:26px;font-weight:700;color:var\(--lima\)[^>]+>)~\$[\d.]+[MK]?(</div>)',
               rf'\g<1>~{fmt(total_proj)}\g<2>', html)
 
 # OTC MTD tabla (purple)
 html = re.sub(r'(font-size:16px;font-weight:700;color:#a78bfa[^>]+>)\$[\d.]+[MK]?(</div>)',
               rf'\g<1>{fmt(otc_vol)}\g<2>', html)
-# OTC proyeccion tabla
+# OTC proyecciÃ³n tabla
 html = re.sub(r'(font-size:16px;font-weight:700;color:var\(--lima\)[^>]+>)\$[\d.]+[MK]?(</div>)',
               rf'\g<1>~{fmt(otc_proj)}\g<2>', html)
 # Rampa MTD tabla (blue)
 html = re.sub(r'(font-size:16px;font-weight:700;color:#38bdf8[^>]+>)\$[\d.]+[MK]?(</div>)',
               rf'\g<1>{fmt(rampa_vol)}\g<2>', html)
-# Rampa proyeccion tabla
+# Rampa proyecciÃ³n tabla
 html = re.sub(r'(font-size:16px;font-weight:700;color:var\(--lima3\)[^>]+>)\$[\d.]+[MK]?(</div>)',
               rf'\g<1>~{fmt(rampa_proj)}\g<2>', html)
 # K3 MTD tabla (green)
@@ -242,7 +243,7 @@ html = re.sub(r'(Volumen MTD</div><div class="value" style="color:#38bdf8">)\$[\
               rf'\g<1>{fmt(rampa_vol)}\g<2>', html)
 html = re.sub(r'(Clientes Activos</div><div class="value">)\d+(</div>)',
               rf'\g<1>{rampa_mau}\g<2>', html)
-# Rampa paises total
+# Rampa paÃ­ses total
 html = re.sub(r'(<span class="ctry-amounts">\$)[\d.]+[MK]?( <span class="ctry-proj-amt">/ ~\$)[\d.]+[MK]?(</span></span>)',
               rf'\g<1>{fmt(rampa_vol)[1:]}\g<2>{fmt(rampa_proj)[1:]}\g<3>', html)
 
@@ -260,7 +261,7 @@ html = re.sub(r'(pace-label">Volumen Marzo MTD</span><span class="pace-value">)\
               rf'\g<1>{fmt_full(otc_vol)}\g<2>', html)
 html = re.sub(r'(pace-label">Promedio diario</span><span class="pace-value">)\$[\d,]+(</span>)',
               rf'\g<1>{fmt_full(otc_daily)}\g<2>', html)
-html = re.sub(r'(pace-label">Proyecci\u00f3n</span><span class="pace-value"[^>]*>)~\$[\d.]+[MK]?(</span>)',
+html = re.sub(r'(pace-label">ProyecciÃ³n</span><span class="pace-value"[^>]*>)~\$[\d.]+[MK]?(</span>)',
               rf'\g<1>~{fmt(otc_proj)}\g<2>', html)
 
 # segChart JS data: [rampa, otc, k3]
@@ -270,4 +271,4 @@ html = re.sub(r"(getElementById\('segChart'\),\{type:'bar',data:\{labels:\['Ramp
 with open("index.html", "w", encoding="utf-8") as f:
     f.write(html)
 
-print("\u2705 index.html actualizado correctamente")
+print("â index.html actualizado correctamente")
