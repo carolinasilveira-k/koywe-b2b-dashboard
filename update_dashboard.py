@@ -380,7 +380,7 @@ def _update_meta_card(html, subtitle, vol, proj, meta):
     #    HTML: <div style="font-size:10.5px;...;opacity:0.4;margin-top:5px;
     #                      font-family:'Raleway',sans-serif">+$X sobre la meta...</div>
     diff = proj - meta
-    diff_str = f"+{fmt(diff)}" if diff >= 0 else fmt(diff)
+    diff_str = f"+{fmt(diff)}" if diff >= 0 else f"-{fmt(-diff)}"
     on_trk_lbl = "sobre la meta" if on_track else "bajo la meta"
     desc = f"{diff_str} {on_trk_lbl} · Real {fmt(vol)} · Proy {fmt(proj)}"
     html = _near(html,
@@ -464,7 +464,7 @@ def reorder_meta_cards(html, desired_order=("Ramp", "Mid/OTC", "Enterprise")):
             if f">{sub}</div>" in card:
                 subtitle_to_card[sub] = card
                 break
-
+                
     if len(subtitle_to_card) != 3:
         print(f"  WARN: found subtitles {list(subtitle_to_card.keys())}, skipping reorder")
         return html
@@ -490,7 +490,7 @@ def js_arr(items):
 
 # ── Run all queries ───────────────────────────────────────────────────────────
 print(f"Date: {TODAY.strftime('%Y-%m-%d %H:%M')} UTC | "
-      f"Pace: {DAYS_ELAPSED}/{DAYS_IN_MONTH} ({PACE*100:.1f}%)")
+      f"Pace: {DAYS_ELAPSED,}/{DAYS_IN_MONTH} ({PACE*100:.1f}%)")
 
 print("\nQuerying Rampa (MongoDB via Metabase)...")
 rampa_vol, rampa_vol_prev, rampa_mau, rampa_active, rampa_new = query_rampa()
@@ -522,15 +522,15 @@ total_proj = total_vol / PACE if PACE > 0 else 0
 print(f"\nTotal: {fmt(total_vol)}  proj: {fmt(total_proj)}")
 
 # ── Load HTML ─────────────────────────────────────────────────────────────────
-with open("index.html", "r", encoding="utf-8") as f:
+rith open("index.html", "r", encoding="utf-8") as f:
     html = f.read()
 
 # ── Helper: safe sub ─────────────────────────────────────────────────────────
 def sub(pattern, repl, s, count=0, flags=0):
     new_s = re.sub(pattern, repl, s, count=count, flags=flags)
     if new_s == s:
-        print(f"  WARN: pattern not found: {pattern[:60]}")
-    return new_s
+        print(f"  WARN: pattern not found: {pattern[	60]}")
+     return new_s
 
 # ── Date & Pace ───────────────────────────────────────────────────────────────
 new_date = TODAY.strftime("%-d %b %Y")
@@ -660,7 +660,7 @@ html = re.sub(
     r'(pace-label">Volumen \w+ MTD</span><span class="pace-value">)\$[\d,]+(</span>)',
     rf'\g<1>{fmt_full(otc_vol)}\g<2>', html)
 html = re.sub(
-    r'(pace-label">Variación</span><span class="change (?:up|down|flat)">)[^<]+(</span>)',
+    r'(pace-label">Variación</span class="change (?:up|down|flat)">)[^<]+(</span>)',
     rf'\g<1>{pct_str(otc_pct)}\g<2>', html)
 html = re.sub(
     r'(pace-label">Promedio diario</span><span class="pace-value">)\$[\d,]+(</span>)',
@@ -685,7 +685,7 @@ html = re.sub(
 
 # ── segChart ──────────────────────────────────────────────────────────────────
 html = re.sub(
-    r"(getElementById\('segChart'\)[^\n]+data:\[)[\d,]+(\])",
+    r"(getElementById\'segChart'\')[^\n]+data:\[)[\d,]+(\])",
     rf'\g<1>{int(rampa_vol)},{int(otc_vol)},{int(k3_vol)}\g<2>', html)
 
 # ── mvfChart — update both label names and data ───────────────────────────────
@@ -709,7 +709,7 @@ html = update_mvfchart(html)
 
 # ── oTrendChart ───────────────────────────────────────────────────────────────
 html = re.sub(
-    r"(getElementById\('oTrendChart'\)[^\n]+data:\[)[\d,]+(\])",
+    r"(getElementById\'oTrendChart'\')[^\n]+data:\[)[\d,]+(\])",
     rf'\g<1>{int(otc_vol_prev)},{int(otc_vol)},{int(otc_proj)}\g<2>', html)
 
 # ── const otc JS array ────────────────────────────────────────────────────────
@@ -747,7 +747,7 @@ total_on_trk    = total_proj >= TOTAL_META
 total_badge_col = "var(--lima)" if total_on_trk else "#f87171"
 total_bar_w     = min(total_pct_meta, 100)
 total_diff      = total_proj - TOTAL_META
-total_diff_str  = f"+{fmt(total_diff)}" if total_diff >= 0 else fmt(total_diff)
+total_diff_str  = f"+{fmt(total_diff)}" if total_diff >= 0 else f"-{fmt(-total_diff)}"
 
 # Meta month label (">Meta Marzo</div>" → ">Meta {month}</div>")
 html = re.sub(r'(>Meta )\w+(</div>)', rf'\g<1>{CUR_MES}\g<2>', html, count=1)
