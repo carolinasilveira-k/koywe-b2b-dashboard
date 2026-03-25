@@ -122,8 +122,7 @@ def query_rampa():
     vol_mtd  = query_rampa_vol(MONTH_START, MONTH_END)
     vol_prev = query_rampa_vol(PREV_START, PREV_END)
 
-    # MAU = active merchants (distinct metaAccount), same as active clients
-    # accountId = individual end-user, not merchant-level
+   # MAU = active merchants (distinct metaAccount), same as active clients
     active_rows = mb_mongo("paymentorders", [
         {"$match": _rampa_base(MONTH_START, MONTH_END)},
         {"$group": {"_id": "$metaAccount"}}, {"$count": "n"}
