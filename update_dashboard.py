@@ -35,6 +35,21 @@ MESES = {1:"Enero",2:"Febrero",3:"Marzo",4:"Abril",5:"Mayo",6:"Junio",
 CUR_MES  = MESES[TODAY.month]
 PREV_MES = MESES[PREV_START.month]
 
+# ── Monthly volume targets (USD) ───────────────────────────────────────────────
+TARGETS_RAMPA = {1:13953076, 2:15000000, 3:16000000, 4:18000000,
+                 5:20000000, 6:22000000, 7:25000000, 8:28000000,
+                 9:31000000,10:34000000,11:36000000,12:38000000}
+TARGETS_OTC   = {1:41906344, 2:42744471, 3:43599360, 4:44871348,
+                 5:46760774, 6:50667990, 7:56593350, 8:64537217,
+                 9:74699961,10:86481960,11:99883600,12:114705272}
+TARGETS_K3    = {1:14000000, 2:14000000, 3:14000000, 4:21000000,
+                 5:28000000, 6:35000000, 7:42000000, 8:49000000,
+                 9:56000000,10:63000000,11:70000000,12:70000000}
+RAMPA_META = TARGETS_RAMPA.get(TODAY.month, 0)
+OTC_META   = TARGETS_OTC.get(TODAY.month, 0)
+K3_META    = TARGETS_K3.get(TODAY.month, 0)
+TOTAL_META = RAMPA_META + OTC_META + K3_META
+
 OTC_1 = "63eae12e45c8376a48c70bac"
 OTC_2 = "6908f615c2c27d0132c7609c"
 ORDER_TYPES = ["crypto-currency", "currency-crypto", "settlement", "topUp"]
@@ -313,6 +328,156 @@ WHERE o."createdAt" >= (NOW() - INTERVAL '7 days') AND o.status='COMPLETED'
 
     return vol_mtd, vol_prev, merch_active, merch_new, performers
 
+# ── Meta card helpers ─────────────────────────────────────────────────────────
+def _update_meta_card(html, subtitle, vol, proj, meta):
+    """
+    Update a Metas vs Real chart-card identified by its subtitle text.
+    subtitle: 'Mid/OTC', 'Enterprise', or 'Ramp'
+    """
+    if meta <= 0:
+        return html
+    pct_vs_meta = round(proj / meta * 100, 1)
+    on_track  = proj >= meta
+    badge_bg  = "rgba(200,255,29,0.15)" if on_track else "rgba(239,68,68,0.15)"
+    badge_col = "var(--lima)"           if on_track else "#f87171"
+    bar_grad  = ("rgba(200,255,29,0.5),rgba(200,255,29,0.9)" if on_track
+                 else "rgba(239,68,68,0.5),rgba(239,68,68,0.85)")
+    bar_w = f"{min(pct_vs_meta, 100):.1f}"
+
+    def _near(h, pat, repl):
+        """Replace pat within 3000 chars after the subtitle anchor."""
+        anchor = f">{subtitle}</div>"
+        idx = h.find(anchor)
+        if idx == -1:
+            print(f"  WARN: subtitle not found: '{subtitle}'")
+            return h
+        chunk = h[idx: idx + 3000]
+        new_chunk = re.sub(pat, repl, chunk, count=1)
+        if new_chunk == chunk:
+            print(f"  WARN: no match near '{subtitle}': {pat[:70]}")
+        return h[:idx] + new_chunk + h[idx + 3000:]
+
+    # 1. Meta value (~$0 → ~$16.0M etc.)
+    html = _near(html,
+        r"(font-size:16px;font-weight:700;color:var\(--lima3\);font-family:'DM Sans',sans-serif\">)~?\$[\d.,]+[MK]?(</div>)",
+        rf"\g<1>~{fmt(meta)}\g<2>")
+
+    # 2. Badge span: background-color, text-color, percentage
+    #    HTML: <span style="background:rgba(...);color:...;padding:3px 10px;border-radius:10px;
+    #                       font-size:12px;font-weight:700;font-family:'DM Sans',sans-serif">188.1%</span>
+    html = _near(html,
+        r"(<span style=\"background:)rgba\([^)]+\)(;color:)[^;]+(;padding:3px 10px;border-radius:10px;font-size:12px;font-weight:700;font-family:'DM Sans',sans-serif\">)[^<]+(</span>)",
+        rf"\g<1>{badge_bg}\g<2>{badge_col}\g<3>{pct_vs_meta:.1f}%\g<4>")
+
+    # 3. Progress bar width + gradient (height:10px variant)
+    #    HTML: <div style="width:16.7%;height:10px;border-radius:6px;
+    #                      background:linear-gradient(90deg,rgba(...),rgba(...))"></div>
+    html = _near(html,
+        r'(style="width:)[\d.]+(%;height:10px;border-radius:6px;background:linear-gradient\(90deg,)rgba\([^)]+\),rgba\([^)]+\)(\)")',
+        rf"\g<1>{bar_w}\g<2>{bar_grad}\g<3>")
+
+    # 4. Description div (static text at bottom of card)
+    #    HTML: <div style="font-size:10.5px;...;opacity:0.4;margin-top:5px;
+    #                      font-family:'Raleway',sans-serif">+$X sobre la meta...</div>
+    diff = proj - meta
+    diff_str = f"+{fmt(diff)}" if diff >= 0 else fmt(diff)
+    on_trk_lbl = "sobre la meta" if on_track else "bajo la meta"
+    desc = f"{diff_str} {on_trk_lbl} · Real {fmt(vol)} · Proy {fmt(proj)}"
+    html = _near(html,
+        r"(opacity:0\.4;margin-top:5px;font-family:'Raleway',sans-serif\">)[^<]+(</div>)",
+        rf"\g<1>{desc}\g<2>")
+
+    return html
+
+
+def reorder_meta_cards(html, desired_order=("Ramp", "Mid/OTC", "Enterprise")):
+    """
+    Reorder the three segment chart-cards inside the 3-column grid of the
+    Metas vs Real section to match desired_order (matched by subtitle text).
+    Scopes to the display:grid container to avoid touching the TOTAL card.
+    """
+    # Find the 3-column grid container (excludes the TOTAL card which is outside it)
+    grid_marker = 'display:grid;grid-template-columns:repeat(3,1fr)'
+    grid_idx = html.find(grid_marker)
+    if grid_idx == -1:
+        print("  WARN: 3-column meta grid not found, skipping reorder")
+        return html
+
+    # Find the opening <div of the grid container
+    div_start = html.rfind('<div', 0, grid_idx)
+    if div_start == -1:
+        print("  WARN: grid <div> start not found")
+        return html
+
+    # Extract the grid div content using balanced-div parsing
+    depth = 0
+    i = div_start
+    grid_end = div_start
+    while i < len(html):
+        if html[i:i+4] == '<div':
+            depth += 1
+            i += 4
+        elif html[i:i+6] == '</div>':
+            depth -= 1
+            i += 6
+            if depth == 0:
+                grid_end = i
+                break
+        else:
+            i += 1
+
+    grid_html = html[div_start:grid_end]
+
+    # Find 3 chart-card divs within the grid
+    cards = []
+    card_positions = []  # (start, end) relative to grid_html
+    search_from = 0
+    for _ in range(3):
+        card_start = grid_html.find('<div class="chart-card"', search_from)
+        if card_start == -1:
+            break
+        depth2 = 0
+        j = card_start
+        while j < len(grid_html):
+            if grid_html[j:j+4] == '<div':
+                depth2 += 1
+                j += 4
+            elif grid_html[j:j+6] == '</div>':
+                depth2 -= 1
+                j += 6
+                if depth2 == 0:
+                    break
+            else:
+                j += 1
+        cards.append(grid_html[card_start:j])
+        card_positions.append((card_start, j))
+        search_from = j
+
+    if len(cards) != 3:
+        print(f"  WARN: expected 3 chart-cards in grid, found {len(cards)}, skipping reorder")
+        return html
+
+    # Map subtitle → card html
+    subtitle_to_card = {}
+    for card in cards:
+        for sub in desired_order:
+            if f">{sub}</div>" in card:
+                subtitle_to_card[sub] = card
+                break
+
+    if len(subtitle_to_card) != 3:
+        print(f"  WARN: found subtitles {list(subtitle_to_card.keys())}, skipping reorder")
+        return html
+
+    # Replace cards backwards to preserve position indices
+    new_grid = grid_html
+    for idx_r, sub in enumerate(reversed(desired_order)):
+        orig_start, orig_end = card_positions[2 - idx_r]
+        new_grid = new_grid[:orig_start] + subtitle_to_card[sub] + new_grid[orig_end:]
+
+    return html[:div_start] + new_grid + html[grid_end:]
+
+
 # ── JS array formatter ────────────────────────────────────────────────────────
 def js_arr(items):
     parts = []
@@ -565,6 +730,57 @@ if k3_perf:
     html = re.sub(r'const k3=\[[\s\S]*?\];',
                   "const k3=" + js_arr(k3_perf) + ";", html)
     print(f"  K3 performers updated: {len(k3_perf)} entries")
+
+# ── Metas vs Real — reorder cards (Rampa → OTC → K3) ─────────────────────────
+print("\nReordering meta cards...")
+html = reorder_meta_cards(html, desired_order=("Ramp", "Mid/OTC", "Enterprise"))
+
+# ── Metas vs Real — update each segment card ──────────────────────────────────
+print("Updating meta cards...")
+html = _update_meta_card(html, "Ramp",    rampa_vol, rampa_proj, RAMPA_META)
+html = _update_meta_card(html, "Mid/OTC", otc_vol,   otc_proj,   OTC_META)
+html = _update_meta_card(html, "Enterprise", k3_vol, k3_proj,    K3_META)
+
+# ── Metas vs Real — total section ─────────────────────────────────────────────
+total_pct_meta  = round(total_proj / TOTAL_META * 100, 1) if TOTAL_META > 0 else 0
+total_on_trk    = total_proj >= TOTAL_META
+total_badge_col = "var(--lima)" if total_on_trk else "#f87171"
+total_bar_w     = min(total_pct_meta, 100)
+total_diff      = total_proj - TOTAL_META
+total_diff_str  = f"+{fmt(total_diff)}" if total_diff >= 0 else fmt(total_diff)
+
+# Meta month label (">Meta Marzo</div>" → ">Meta {month}</div>")
+html = re.sub(r'(>Meta )\w+(</div>)', rf'\g<1>{CUR_MES}\g<2>', html, count=1)
+
+# Meta value: <div style="font-size:26px;...;color:var(--lima3)...">$73.6M</div>
+html = re.sub(
+    r"(font-size:26px;font-weight:700;color:var\(--lima3\);font-family:'DM Sans',sans-serif\">)\$[\d.,]+[MK]?(</div>)",
+    rf'\g<1>{fmt(TOTAL_META)}\g<2>', html, count=1)
+
+# Large % badge: <div style="font-size:36px;...;color:var(--lima)...">150.5%</div>
+html = re.sub(
+    r"(font-size:36px;font-weight:700;color:)[^;]+(;font-family:'DM Sans',sans-serif;line-height:1\">)[\d.]+%(</div>)",
+    rf'\g<1>{total_badge_col}\g<2>{total_pct_meta:.1f}%\g<3>', html, count=1)
+
+# "+$X sobre la meta" sub-label
+html = re.sub(
+    r"(opacity:0\.5;margin-top:3px;font-family:'Raleway',sans-serif\">)[^<]+(</div>)",
+    rf'\g<1>{total_diff_str} sobre la meta\g<2>', html, count=1)
+
+# Progress bar (height:8px) — replace full style to handle var(--lima) in gradient
+# HTML: <div style="width:100%;height:8px;border-radius:6px;background:linear-gradient(...)"></div>
+html = re.sub(
+    r'(<div style="width:)[\d.]+%;height:8px[^"]*"(></div>)',
+    rf'\g<1>{total_bar_w:.1f}%;height:8px;border-radius:6px;'
+    r'background:linear-gradient(90deg,var(--lima),rgba(200,255,29,0.6))"'
+    rf'\g<2>', html, count=1)
+
+# Description spans: <span>text</span>  <span>Pace mes: X%</span>
+# (spans are on separate lines in HTML, hence \s* between them)
+total_desc = f"{fmt(rampa_vol)} Rampa · {fmt(otc_vol)} OTC · {fmt(k3_vol)} K3 · Proy {fmt(total_proj)}"
+html = re.sub(
+    r'(<span>)[^<]*(</span>\s*<span>Pace mes: )[\d.]+(%</span>)',
+    rf'\g<1>{total_desc}\g<2>{PACE*100:.1f}\g<3>', html, count=1)
 
 # ── Write HTML ────────────────────────────────────────────────────────────────
 with open("index.html", "w", encoding="utf-8") as f:
