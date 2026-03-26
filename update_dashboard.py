@@ -241,16 +241,96 @@ def query_otc():
 
 # ── K3 queries (PostgreSQL) ───────────────────────────────────────────────────
 def _get_fx():
+    """Tipo de cambio desde bancos centrales oficiales, con fallback a open.er-api."""
+    rates = {}
+    hdr = {"User-Agent": "Mozilla/5.0"}
+
+    def _fetch(url, **kw):
+        try:
+            return requests.get(url, timeout=10, headers=hdr, **kw).json()
+        except Exception as e:
+            print(f"  FX warn {url[:60]}: {e}")
+            return None
+
+    # CLP - Banco Central de Chile (dolar observado)
     try:
-        rates = requests.get("https://open.er-api.com/v6/latest/USD", timeout=10).json().get("rates", {})
+        d = _fetch("https://mindicador.cl/api/dolar")
+        if d and d.get("serie"):
+            rates["CLP"] = float(d["serie"][0]["valor"])
+            print(f"  FX CLP (BCC): {rates['CLP']}")
     except Exception as e:
-        print(f"  WARNING FX: {e}")
-        rates = {}
+        print(f"  FX CLP error: {e}")
+
+    # ARS - BCRA tasa de referencia oficial
+    try:
+        d = _fetch("https://api.bcra.gob.ar/estadisticascambiarias/v1.0/Cotizaciones/usd",
+                   verify=False)
+        if d and d.get("results"):
+            detalle = d["results"][0].get("detalle", [])
+            usd = next((x for x in detalle if x.get("codigoMoneda") == "USD"), None)
+            if usd:
+                rates["ARS"] = float(usd["tipoCotizacion"])
+                print(f"  FX ARS (BCRA): {rates['ARS']}")
+    except Exception as e:
+        print(f"  FX ARS error: {e}")
+
+    # COP - Banco de la Republica (TRM oficial)
+    try:
+        d = _fetch("https://www.datos.gov.co/resource/mcec-87by.json"
+                   "?$order=vigenciadesde DESC&$limit=1")
+        if d and len(d) > 0:
+            rates["COP"] = float(d[0]["valor"])
+            print(f"  FX COP (BanRep TRM): {rates['COP']}")
+    except Exception as e:
+        print(f"  FX COP error: {e}")
+
+    # BRL - Banco Central do Brasil (PTAX)
+    try:
+        from datetime import timedelta
+        for delta in range(5):
+            ds = (TODAY - timedelta(days=delta)).strftime("%m-%d-%Y")
+            url = (f"https://olinda.bcb.gov.br/olinda/servico/PTAX/versao/v1/odata/"
+                   f"CotacaoDolarDia(dataCotacao=@dataCotacao)?@dataCotacao='{ds}'"
+                   f"&$top=1&$format=json&$select=cotacaoVenda")
+            d = _fetch(url)
+            if d and d.get("value"):
+                rates["BRL"] = float(d["value"][0]["cotacaoVenda"])
+                print(f"  FX BRL (BCB PTAX {ds}): {rates['BRL']}")
+                break
+    except Exception as e:
+        print(f"  FX BRL error: {e}")
+
+    # EUR - Banco Central Europeo
+    try:
+        d = _fetch("https://data-api.ecb.europa.eu/service/data/EXR/"
+                   "D.USD.EUR.SP00.A?lastNObservations=1&format=jsondata")
+        if d:
+            obs = d["dataSets"][0]["series"]["0:0:0:0:0"]["observations"]
+            usd_per_eur = float(list(obs.values())[0][0])
+            rates["EUR"] = 1.0 / usd_per_eur
+            print(f"  FX EUR (BCE): {rates['EUR']:.4f}")
+    except Exception as e:
+        print(f"  FX EUR error: {e}")
+
+    # MXN, PEN, BOB, HKD - open.er-api (Banxico requiere token; BCRP sin datos intradiarios)
+    missing = [c for c in ["MXN","PEN","BOB","HKD"] if c not in rates]
+    if missing:
+        try:
+            d = requests.get("https://open.er-api.com/v6/latest/USD", timeout=10).json()
+            er = d.get("rates", {})
+            for c in missing:
+                if c in er:
+                    rates[c] = float(er[c])
+                    print(f"  FX {c} (open.er-api): {rates[c]}")
+        except Exception as e:
+            print(f"  FX open.er-api error: {e}")
+
+    # Fallback final hardcodeado
     fallback = {"CLP":920,"ARS":1450,"PEN":3.45,"MXN":17.9,"COP":3700,
                 "BRL":5.3,"EUR":0.87,"HKD":7.83,"BOB":6.9,"USD":1,"USDT":1,"USDC":1}
     for k, v in fallback.items():
         rates.setdefault(k, v)
-    rates["USDT"] = rates["USDC"] = 1.0
+    rates["USDT"] = rates["USDC"] = rates["USD"] = 1.0
     return rates
 
 def query_k3():
